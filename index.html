@@ -167,10 +167,38 @@
       <div style="display:flex;align-items:flex-end;gap:8px">
         <button class="btn primary" onclick="ssSearch();ssLive()">🔍 搜索</button>
         <button class="btn" onclick="ssReset()">重置</button>
+        <button class="btn" onclick="exportNoonFromSS()">📦 生成 Noon 模板</button>
       </div>
     </div>
     <div id="ssResult" style="margin-top:14px"></div>
     <div id="ssLive" style="margin-top:14px"></div>
+  </div>
+
+  <!-- Noon 批量上传模板 -->
+  <div class="card">
+    <h2>📦 Noon 批量上传模板 <span class="tag">NIS 双语结构 · 一键导出 CSV</span></h2>
+    <p class="small" style="margin:0 0 10px">按 Noon Seller Lab 的 <b>NIS（New Item Setup）</b> 模板整理，含英/阿双语列与父子 SKU 变体示例。下载后删除示例行、按实际商品填写，保存为 CSV/TSV/XLS 上传即可。</p>
+    <div class="btnrow">
+      <button class="btn primary" onclick="exportNoonTemplate()">⬇️ 导出 Noon 上传模板 (CSV)</button>
+    </div>
+    <details style="margin-top:12px">
+      <summary>📋 模板字段与填写要点（点击展开）</summary>
+      <div style="margin-top:12px">
+        <table>
+          <tr><th>字段</th><th>必填</th><th>要点</th></tr>
+          <tr><td>Partner SKU (Unique)</td><td>🔴</td><td>全局唯一，无空格/特殊符</td></tr>
+          <tr><td>Brand</td><td>🔴</td><td>系统有则选，否则提新品牌申请</td></tr>
+          <tr><td>Product Title (EN/AR)</td><td>🔴</td><td>双语；英文≤150字符</td></tr>
+          <tr><td>GTIN</td><td>🔴</td><td>EAN/UPC（GS1 购买）</td></tr>
+          <tr><td>Image URLs</td><td>🔴</td><td>公网链接，<b>以 .jpeg 结尾</b>，多图逗号分隔</td></tr>
+          <tr><td>Long Description / Feature Bullet</td><td>🟢</td><td>提升曝光，建议双语</td></tr>
+          <tr><td>Item Condition</td><td>🟢</td><td>仅 New（只能卖全新密封品）</td></tr>
+          <tr><td>Family / Product Type / Subtype</td><td>—</td><td>类目树三级，决定专属属性列</td></tr>
+          <tr><td>Parent SKU / Parent Group Key / Child / Size Variation</td><td>—</td><td>变体父子关系；Noon 目前仅支持「尺码」轴</td></tr>
+        </table>
+        <p class="small" style="margin-top:10px">上传路径：Seller Lab → Catalog → Imports → Import type 选 <b>NIS</b>、Subtype 选 <b>NIS Create/Update</b> → 上传 CSV。多类目或需类目专属属性（如电子型号、食品净含量），请以后台下载的该类目模板补齐专属列。</p>
+      </div>
+    </details>
   </div>
 
   <!-- 参数设置 -->
@@ -1397,6 +1425,47 @@ function drawRadar(item){
     `<span style="color:var(--noon)">💡 ${(buildAdvice(item.p,item.r)[0]||'')}</span>`;
 }
 
+/* ---------- 导出 Noon NIS 上传模板 ---------- */
+function exportNoonTemplate(){
+  const header=["Partner SKU (Unique)","Brand","Product Title (EN)","Product Title (AR)","Long Description (EN)","Long Description (AR)","Feature Bullet (EN)","Feature Bullet (AR)","Item Condition","What's in the box (EN)","What's in the box (AR)","GTIN","Image URLs","Family","Product Type","Product Subtype","Parent SKU","Parent Group Key","Child","Size Variation","Sizing Standard","Attribute Key","Attribute Value"];
+  const rows=[
+    ["EXAMPLE-PARENT-001","Nike","Nike Air Zoom Running Shoes","نايك اير زوم حذاء جري","Breathable mesh running shoes with cushioned sole.","حذاء جري بخامة شبكية خفيفة.","Lightweight & cushioned; Breathable mesh","خفيف ومبطن; خامة شبكية متنفسة","New","1 pair of shoes","زوج واحد من الحذاء","6291234567890","https://img.example.com/shoe_front.jpeg,https://img.example.com/shoe_side.jpeg","Fashion","Shoes","Running Shoes","EXAMPLE-PARENT-001","EXAMPLE-GRP-001","","","","","Material:Mesh"],
+    ["EXAMPLE-CHILD-001","Nike","Nike Air Zoom Running Shoes Size 42","نايك اير زوم حذاء جري مقاس 42","Size 42 variant of the Air Zoom running shoes.","نسخة مقاس 42 من حذاء الجري.","EU size 42","المقاس الأوروبي 42","New","1 pair of shoes","زوج واحد من الحذاء","6291234567891","https://img.example.com/shoe_42.jpeg","Fashion","Shoes","Running Shoes","EXAMPLE-PARENT-001","EXAMPLE-GRP-001","Child","42","EU","","Color:Black"]
+  ];
+  const esc=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+  const csv='\uFEFF'+[header,...rows].map(r=>r.map(esc).join(',')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='noon_nis_template.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+/* ---------- 用选品搜索结果生成 Noon NIS 上传模板 ---------- */
+function exportNoonFromSS(){
+  if(!SS_VIEW.length){
+    alert('请先在上方「选品搜索」输入关键词或类目，搜出真实商品后再点「生成 Noon 模板」。\n（若已搜索但仍为空，说明该类目/关键词在库中没有匹配的商品。）');
+    return;
+  }
+  const header=["Partner SKU (Unique)","Brand","Product Title (EN)","Product Title (AR)","Long Description (EN)","Long Description (AR)","Feature Bullet (EN)","Feature Bullet (AR)","Item Condition","What's in the box (EN)","What's in the box (AR)","GTIN","Image URLs","Family","Product Type","Product Subtype","Parent SKU","Parent Group Key","Child","Size Variation","Sizing Standard","Attribute Key","Attribute Value"];
+  const rows=SS_VIEW.map((x,i)=>{
+    const sku='ZX-'+String(x.plat||'P').toUpperCase().slice(0,6)+'-'+String(i+1).padStart(3,'0');
+    const en=(x.kw||x.name||'').toString().trim();
+    const note=(x.note||'').toString().trim();
+    const price=(x.dm&&x.dm.price)?x.dm.price:(x.price||'');
+    return [sku,'',en,'',note,'',note.slice(0,120),'','New','','','',x.img||'',x.cat||'','','',sku,'','','','','',price?('Price(AED)'):'',price?String(price):''];
+  });
+  const esc=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+  const csv='\uFEFF'+[header,...rows].map(r=>r.map(esc).join(',')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='noon_upload_from_products.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
 /* ---------- 导出报告 ---------- */
 function exportMD(){
   if(!results.length){$('report').value='暂无数据';return;}
@@ -1446,6 +1515,7 @@ function printReport(){
 
 /* ---------- 选品搜索（跨平台真实商品，按类目 + 关键词筛选） ---------- */
 let SS=[];
+let SS_VIEW=[];
 let PROXY_ON=false, API_ON=false, API_PROV='';
 const SS_CATS=['手机配件','电子电器','电脑办公','美妆个护','时尚服饰','鞋靴箱包','家居家纺','厨房用品','母婴玩具','运动户外','汽车用品','食品保健','宠物用品','办公文具','珠宝手表','其他'];
 function ssCatOf(name,kw,note){
@@ -1558,8 +1628,9 @@ function ssSearch(){
   box.innerHTML=cards+
     '<div class="ss-jump-wrap"><div class="ss-jump-title">🌐 去各平台搜「'+term+'」（点击即跳转对应平台搜索页）</div>'+
     '<div class="ss-jump-row">'+jumpBtns+'</div></div>';
-}
-function ssReset(){$('ss_q').value='';$('ss_cat').value='';$('ss_plat').value='';ssSearch();$('ssLive').innerHTML='';}
+  SS_VIEW=list.slice(0,18);
+  }
+  function ssReset(){$('ss_q').value='';$('ss_cat').value='';$('ss_plat').value='';ssSearch();$('ssLive').innerHTML='';}
 let SS_LIVE_TIMER=null;
 function ssLiveDebounced(){
   if(SS_LIVE_TIMER)clearTimeout(SS_LIVE_TIMER);
