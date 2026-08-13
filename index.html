@@ -201,6 +201,25 @@
     </details>
   </div>
 
+  <!-- 粘贴链接生成 Noon 模板 -->
+  <div class="card">
+    <h2>🔗 粘贴商品链接生成 Noon 模板 <span class="tag">丢链接 → 自动解析 → 导出 CSV</span></h2>
+    <p class="small" style="margin:0 0 10px">把 <b>Noon / Amazon.ae / SHEIN / Namshi / Trendyol</b> 等中东平台的<b>商品页链接</b>粘进来，工具会自动抓取标题、图片、价格、描述并映射成 Noon NIS 上传行。自动抓取依赖公共代理，若你网络下不通，会直接打开手动填写表单，照样一键导出。</p>
+    <div class="grid g4">
+      <div style="grid-column:1 / -1">
+        <label>🔗 商品链接</label>
+        <input id="linkUrl" type="text" placeholder="https://www.noon.com/...  或  https://www.amazon.ae/..." style="width:100%;padding:11px 13px;font-size:15px;border:1px solid var(--line);border-radius:10px;outline:none;box-sizing:border-box">
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:8px">
+        <button class="btn primary" onclick="parseProductUrl()">🪄 解析并生成</button>
+        <button class="btn" onclick="clearLinkForm()">清空</button>
+        <button class="btn" onclick="exportLinkNoon()">⬇️ 导出 Noon 模板</button>
+      </div>
+    </div>
+    <div id="linkStatus" style="margin-top:10px"></div>
+    <div id="linkForm" style="margin-top:12px"></div>
+  </div>
+
   <!-- 参数设置 -->
   <div class="card">
     <h2>⚙️ 参数设置 <span class="tag">按你的实际数据调整</span></h2>
@@ -593,7 +612,7 @@ function buildAdvice(p,r){
 
 /* ---------- 中东多平台热销雷达（联网行业数据，2026-08 检索） ---------- */
 const PLATFORMS=[
-  {key:'noon',name:'Noon',flag:'🟢',color:'#21a67a',icon:'<img src=\"images/logos/noon.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+  {key:'noon',name:'Noon',flag:'🟢',color:'#21a67a',icon:'🛒',
    role:'中东本土综合电商龙头（沙特/阿联酋/埃及）· 中文后台+新店流量扶持',
    best:['3C电子与智能小家电','时尚服饰(Thobe/Abaya)','美妆个护(Oud香水)','家居Majlis用品','节日装饰&礼品'],
    hot:[
@@ -617,7 +636,7 @@ const PLATFORMS=[
    pit:'带电产品需 CE/FCC + 沙特 Saber/SFDA 清关；新店有中文后台流量扶持',
    good:'中低客单促销品、潮流电子、快时尚、节日品',
    src:'xmshredder 国庆选品, qicaiying, menglar'},
-  {key:'amazon',name:'Amazon.ae / Amazon.sa',flag:'🔵',color:'#ff9900',icon:'<img src=\"images/logos/amazon.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+  {key:'amazon',name:'Amazon.ae / Amazon.sa',flag:'🔵',color:'#ff9900',icon:'📦',
    role:'综合电商（FBA成熟·Prime会员沙特>30%）· 标品/中高端定位',
    best:['消费电子','家居厨房','美妆个护','时尚运动','宠物用品'],
    hot:[
@@ -641,7 +660,7 @@ const PLATFORMS=[
    pit:'带电需 CE/FCC + Saber；品牌备案/Vine 积累评测；标品竞争强',
    good:'有品牌属性、高客单、需 FBA 时效的标品',
    src:'sell.amazon.sa, metricscart KSA, worldcompanysetup, accio'},
-  {key:'shein',name:'SHEIN 中东站',flag:'🟣',color:'#ff3e6c',icon:'<img src=\"images/logos/shein.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+  {key:'shein',name:'SHEIN 中东站',flag:'🟣',color:'#ff3e6c',icon:'👗',
    role:'快时尚第一·市占率>30%·半托管+全托管·年轻用户占 60%',
    best:['现代穆斯林女装','运动户外','家居收纳','箱包','女鞋'],
    hot:[
@@ -666,7 +685,7 @@ const PLATFORMS=[
    pit:'女装主图勿露肤；国庆品绿白金配色·禁印国旗；斋月 1月预热',
    good:'快反供应链女装/运动/家居·轻小件·可半托管',
    src:'163.com 国庆爆品, 10100 运动户外, accio Saudi Top, SHEIN 招商'},
-  {key:'namshi',name:'Namshi',flag:'🟠',color:'#e8541e',icon:'<img src=\"images/logos/namshi.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+  {key:'namshi',name:'Namshi',flag:'🟠',color:'#e8541e',icon:'👟',
    role:'海湾本土时尚电商（UAE/SA/QA/OM/BA/KW）· 青年时尚定位',
    best:['女装连衣裙','女鞋','运动服','美妆','男装'],
    hot:[
@@ -689,7 +708,7 @@ const PLATFORMS=[
    pit:'重品牌与设计感；Trendyol 等品牌入驻；非普货铺量',
    good:'有调性的时尚服饰/鞋履/美妆品牌卖家',
    src:'namshi.com 前台, noon.com'},
-  {key:'trendyol',name:'Trendyol',flag:'⚪',color:'#f27a1a',icon:'<img src=\"images/logos/trendyol.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+  {key:'trendyol',name:'Trendyol',flag:'⚪',color:'#f27a1a',icon:'🛍️',
    role:'土耳其巨头·2023进GCC·本地物流·高性价比时尚',
    best:['男女装','配饰','牛仔','运动休闲'],
    hot:[
@@ -711,7 +730,7 @@ const PLATFORMS=[
    pit:'时尚红海·靠性价比与设计；需本地库存',
    good:'快反服饰供应链·平价时尚',
    src:'namshi(Trendyol 入驻), 10100'},
-  {key:'temu',name:'Temu 中东站',flag:'🔴',color:'#f60',icon:'<img src=\"images/logos/temu.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+  {key:'temu',name:'Temu 中东站',flag:'🔴',color:'#f60',icon:'🧸',
    role:'超性价比新贵(2023起)·全托管·下载榜首(沙特/阿联酋)',
    best:['普货轻小件','家居小物','饰品','3C配件'],
    hot:[
@@ -732,7 +751,7 @@ const PLATFORMS=[
    pit:'价格战极致·利润薄；全托管无定价权；适合铺货测款',
    good:'供应链极致低价·轻小件铺货型卖家',
    src:'haibeigoods 平台榜'},
-  {key:'ali',name:'AliExpress 中东站',flag:'🟡',color:'#ffb300',icon:'<img src=\"images/logos/ali.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+  {key:'ali',name:'AliExpress 中东站',flag:'🟡',color:'#ffb300',icon:'🌐',
    role:'中国跨境头部·沙特第二大零售网站·高性价比大众',
    best:['普货轻小件','3C','家居','服饰'],
    hot:[
@@ -754,7 +773,7 @@ const PLATFORMS=[
    good:'发挥中国供应链·普货轻小件',
    src:'haibeigoods 平台榜'}
 ,
-  {key:'carrefour',name:'Carrefour 中东',flag:'🟢',color:'#0078d2',icon:'<img src=\"images/logos/carrefour.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+  {key:'carrefour',name:'Carrefour 中东',flag:'🟢',color:'#0078d2',icon:'🛒',
    role:'家乐福中东线上平台（UAE/沙特/埃及/科威特/卡塔尔）· 线下门店强+线上增长快',
    best:['食品杂货','家居日用','小家电','母婴快消','个护清洁'],
    hot:[
@@ -777,7 +796,7 @@ const PLATFORMS=[
    pit:'食品类需清真/SFDA认证；价格战强；本地供应商有门店优势',
    good:'有本地食品/快消供应链、能做日常刚需品的卖家',
    src:'grabonuae UAE电商统计, stateglobe UAE市场'},
-  {key:'sharafdg',name:'Sharaf DG',flag:'🔵',color:'#1e3a8a',icon:'<img src=\"images/logos/sharafdg.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+  {key:'sharafdg',name:'Sharaf DG',flag:'🔵',color:'#1e3a8a',icon:'💻',
    role:'阿联酋3C电子与家电零售巨头（月访问160万+）· 高客单标品',
    best:['手机','笔记本','游戏主机','智能穿戴','家电','相机'],
    hot:[
@@ -800,7 +819,7 @@ const PLATFORMS=[
    pit:'需品牌授权/国代资质；价格高信任门槛高；售后要求严格',
    good:'有品牌授权、能做高客单3C/家电的卖家',
    src:'grabonuae UAE电商统计, stateglobe UAE市场'},
-  {key:'mumzworld',name:'Mumzworld',flag:'🟣',color:'#e91e63',icon:'<img src=\"images/logos/mumzworld.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+  {key:'mumzworld',name:'Mumzworld',flag:'🟣',color:'#e91e63',icon:'🍼',
    role:'中东母婴垂直电商龙头（UAE起家，覆盖海湾）· 月访问25万+',
    best:['婴儿护理','奶粉辅食','益智玩具','童装','孕妇用品'],
    hot:[
@@ -823,7 +842,7 @@ const PLATFORMS=[
    pit:'儿童用品认证严（SASO/EN71）；奶粉辅食需SFDA/清真；退货率高',
    good:'有母婴供应链和合规能力、能做品牌信任感的卖家',
    src:'grabonuae UAE电商统计, stateglobe UAE市场'},
-  {key:'6thstreet',name:'6th Street',flag:'🟠',color:'#ff6b35',icon:'<img src=\"images/logos/sixthstreet.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+  {key:'6thstreet',name:'6th Street',flag:'🟠',color:'#ff6b35',icon:'👠',
    role:'海湾时尚鞋履电商（UAE/沙特/科威特等）· 平价时尚',
    best:['女鞋','男鞋','运动鞋','包袋','配饰'],
    hot:[
@@ -846,7 +865,7 @@ const PLATFORMS=[
    pit:'时尚红海；重图片与品牌感；尺码需本地化；退货率高',
    good:'鞋履箱包供应链强、能做品牌感与快速上新的卖家',
    src:'stateglobe UAE市场, 6thstreet.com'},
-  {key:'fordeal',name:'Fordeal',flag:'🔵',color:'#0056ff',icon:'<img src=\"images/logos/fordeal.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+  {key:'fordeal',name:'Fordeal',flag:'🔵',color:'#0056ff',icon:'📦',
    role:'中东跨境综合平台（总部广州，覆盖沙特/阿联酋/科威特/卡塔尔/阿曼/巴林）· 中国卖家友好',
    best:['女装时尚','家居日用','美妆个护','3C配件','母婴玩具'],
    hot:[
@@ -869,7 +888,7 @@ const PLATFORMS=[
    pit:'价格战强；需快速上新；物流时效影响转化；部分国家清关需认证',
    good:'有中国供应链、能做快反时尚/家居/3C配件的卖家',
    src:'Fordeal 招商资料, 行业调研'},
-  {key:'ounass',name:'Ounass',flag:'⚫',color:'#1a1a1a',icon:'<img src=\"images/logos/ounass.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+  {key:'ounass',name:'Ounass',flag:'⚫',color:'#1a1a1a',icon:'💎',
    role:'阿联酋高端奢侈品时尚电商（覆盖海湾六国）· 高端设计师品牌',
    best:['奢侈品女装','设计师包袋','高端鞋履','珠宝配饰','高级美妆'],
    hot:[
@@ -1466,6 +1485,156 @@ function exportNoonFromSS(){
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
+/* ---------- 粘贴链接 → Noon NIS 模板 ---------- */
+let LINK_PRODUCT=null;
+function escAttr(v){return (v==null?'':String(v)).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function escHtml(v){return (v==null?'':String(v)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function trunc(s,n){s=(s||'').toString();return s.length>n?s.slice(0,n)+'…':s;}
+
+function fetchWithTimeout(url,ms){
+  const ctrl=new AbortController();
+  const t=setTimeout(()=>ctrl.abort(),ms);
+  return fetch(url,{signal:ctrl.signal,headers:{'Accept':'text/html,*/*'}}).finally(()=>clearTimeout(t));
+}
+async function fetchHtmlText(url){
+  const enc=encodeURIComponent(url);
+  const proxies=[
+    'https://api.allorigins.win/raw?url='+enc,
+    'https://corsproxy.io/?url='+enc,
+    'https://r.jina.ai/http://'+url.replace(/^https?:\/\//,'')
+  ];
+  for(const p of proxies){
+    try{
+      const r=await fetchWithTimeout(p,14000);
+      if(!r.ok) continue;
+      const txt=await r.text();
+      if(txt&&txt.length>200) return txt;
+    }catch(e){/* 试下一个代理 */}
+  }
+  return null;
+}
+function parseHtmlMeta(html,url){
+  const doc=new DOMParser().parseFromString(html,'text/html');
+  const getMeta=n=>{const m=doc.querySelector('meta[property="'+n+'"]')||doc.querySelector('meta[name="'+n+'"]');return m?(m.getAttribute('content')||'').trim():'';};
+  let title=getMeta('og:title')||getMeta('twitter:title')||(doc.title||'').trim();
+  let image=getMeta('og:image')||getMeta('twitter:image')||getMeta('og:image:url')||'';
+  let desc=getMeta('og:description')||getMeta('twitter:description')||getMeta('description')||'';
+  let brand=getMeta('og:brand')||getMeta('product:brand')||'';
+  let price=getMeta('og:price:amount')||getMeta('product:price:amount')||'';
+  let currency=getMeta('og:price:currency')||getMeta('product:price:currency')||'';
+  try{
+    const scripts=doc.querySelectorAll('script[type="application/ld+json"]');
+    for(const s of scripts){
+      let j;try{j=JSON.parse(s.textContent);}catch(e){continue;}
+      const arr=Array.isArray(j)?j:[j];
+      for(const obj of arr){
+        const g=obj['@graph']?obj['@graph'].find(x=>x&&x['@type']==='Product'):(obj&&obj['@type']==='Product'?obj:null);
+        if(g){
+          if(!title&&g.name)title=g.name;
+          if(!image&&g.image)image=Array.isArray(g.image)?g.image[0]:(g.image.url||g.image);
+          if(!desc&&g.description)desc=g.description;
+          if(!brand&&g.brand)brand=(typeof g.brand==='string')?g.brand:(g.brand.name||'');
+          if(!price&&g.offers){const off=Array.isArray(g.offers)?g.offers[0]:g.offers;if(off&&off.price)price=off.price;if(!currency&&off&&off.priceCurrency)currency=off.priceCurrency;}
+        }
+      }
+    }
+  }catch(e){}
+  title=(title||'').replace(/\s*[\|\-–—]\s*(Noon|Amazon\.ae|Amazon|SHEIN|Namshi|Trendyol|نت|Souq).*$/i,'').trim();
+  if(typeof image!=='string') image='';
+  return {title,image,desc,brand,price:price?String(price):'',currency,currencyOrig:currency,url};
+}
+function parseJinaText(text,url){
+  let title='';
+  for(const ln of text.split('\n')){const m=ln.match(/^#\s+(.*)/);if(m&&!title){title=m[1].trim();break;}}
+  const pm=text.match(/(?:AED|USD|\$|د\.إ)\s?[\d.,]+|[\d.,]+\s?(?:AED|SAR|USD|د\.إ)/i);
+  const price=pm?pm[0].replace(/\s+/g,' '):'';
+  return {title,image:'',desc:trunc(text.replace(/[#*_`>\-]/g,' ').replace(/\s+/g,' '),400),brand:'',price,currency:'',url};
+}
+function linkDomain(url){try{return new URL(url).hostname.replace(/^www\./,'');}catch(e){return 'LINK';}}
+
+async function parseProductUrl(){
+  const url=($('linkUrl').value||'').trim();
+  const st=$('linkStatus');
+  if(!/^https?:\/\//i.test(url)){st.innerHTML='<span style="color:#c0392b">⚠️ 请输入有效的 http/https 商品链接</span>';return;}
+  st.innerHTML='<span style="color:#2980b9">⏳ 正在抓取并解析商品信息…（若长时间无反应，可能是公共代理在你网络下不通，可手动填写下方表单）</span>';
+  $('linkForm').innerHTML='';
+  let text=null;
+  try{text=await fetchHtmlText(url);}catch(e){}
+  let p;
+  if(!text){
+    st.innerHTML='<span style="color:#c0392b">⚠️ 自动抓取失败（公共代理在你网络下可能不通）。已为你打开<b>手动填写表单</b>：把商品页上看到的标题 / 图片 / 价格填进去，一样能导出 Noon 模板。</span>';
+    renderLinkForm({url,title:'',image:'',desc:'',brand:'',price:'',currency:''});
+    return;
+  }
+  const looksHtml=/<title|<meta|<html|<!doctype/i.test(text);
+  p = looksHtml ? parseHtmlMeta(text,url) : parseJinaText(text,url);
+  renderLinkForm(p);
+  const got=[p.title,p.image,p.price].filter(Boolean).length;
+  if(got>=2){
+    st.innerHTML='<span style="color:#27ae60">✅ 已自动解析：'+(p.title?('《'+trunc(escHtml(p.title),40)+'》'):'')+(p.price?(' · 参考价 '+escHtml(p.price)):'')+'。请核对并补全必填项（Brand / GTIN / 图片须 .jpeg 结尾 / 类目），再点导出。</span>';
+  }else{
+    st.innerHTML='<span style="color:#e67e22">⚠️ 仅识别到部分字段，已预填已知的，其余请手动补全后导出。</span>';
+  }
+}
+function buildSku(url){
+  const d=linkDomain(url).split('.')[0].toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8)||'LINK';
+  return d+'-'+Math.random().toString(36).slice(2,8).toUpperCase();
+}
+function renderLinkForm(p){
+  p.url=p.url||'';
+  p._sku=buildSku(p.url);
+  LINK_PRODUCT=p;
+  const v=(k,def)=> (p[k]!=null&&p[k]!=='')?p[k]:(def||'');
+  const f=(id,label,value,ph)=>'<div><label>'+label+'</label><input id="'+id+'" value="'+escAttr(value)+'" placeholder="'+(ph||'')+'" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;box-sizing:border-box"></div>';
+  $('linkForm').innerHTML=
+    '<div class="grid g3">'+
+      f('lf_sku','Partner SKU (Unique)',p._sku,'全局唯一，无空格/特殊符')+
+      f('lf_brand','Brand 品牌',v('brand'),'如 Nike')+
+      f('lf_title','Product Title (EN) 英文标题',v('title'),'英文，≤150字符')+
+      f('lf_title_ar','Product Title (AR) 阿拉伯标题','','(可选) 阿拉伯语站需填')+
+      f('lf_img','Image URLs 图片链接',v('image'),'公网链接，须以 .jpeg 结尾')+
+      f('lf_gtin','GTIN 国际条码','','(必填) EAN/UPC')+
+      f('lf_family','Family 大类','','(可选)')+
+      f('lf_type','Product Type 中类','','(可选)')+
+      f('lf_cat','Product Subtype 类目子类','','(必填) 末级类目')+
+      f('lf_price','参考价 (原站)',v('price')+(v('currency')?' '+v('currency'):''),'仅写入属性作参考')+
+    '</div>'+
+    '<div class="grid g3" style="margin-top:10px">'+
+      '<div style="grid-column:1 / -1"><label>Long Description (EN) 长描述</label><textarea id="lf_desc" rows="3" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;box-sizing:border-box">'+escHtml(v('desc'))+'</textarea></div>'+
+      '<div style="grid-column:1 / -1"><label>Feature Bullet (EN) 卖点</label><textarea id="lf_bullet" rows="2" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;box-sizing:border-box">'+escHtml(v('desc').slice(0,120))+'</textarea></div>'+
+    '</div>'+
+    '<p class="small" style="margin-top:8px">填好后点「⬇️ 导出 Noon 模板」下载 CSV。图片链接务必以 <b>.jpeg</b> 结尾；Brand / GTIN / 类目为 Noon 必填项，请补全。</p>';
+}
+function clearLinkForm(){
+  $('linkUrl').value='';
+  $('linkStatus').innerHTML='';
+  $('linkForm').innerHTML='';
+  LINK_PRODUCT=null;
+}
+function exportLinkNoon(){
+  if(!LINK_PRODUCT){alert('请先粘贴商品链接并点「解析并生成」，或在表单手动填写后导出。');return;}
+  const g=id=>{const el=document.getElementById(id);return el?(el.value||'').trim():'';};
+  const header=["Partner SKU (Unique)","Brand","Product Title (EN)","Product Title (AR)","Long Description (EN)","Long Description (AR)","Feature Bullet (EN)","Feature Bullet (AR)","Item Condition","What's in the box (EN)","What's in the box (AR)","GTIN","Image URLs","Family","Product Type","Product Subtype","Parent SKU","Parent Group Key","Child","Size Variation","Sizing Standard","Attribute Key","Attribute Value"];
+  const sku=g('lf_sku')||LINK_PRODUCT._sku;
+  const price=g('lf_price');
+  const rows=[[
+    sku, g('lf_brand'), g('lf_title'), g('lf_title_ar'),
+    g('lf_desc'), '', g('lf_bullet'), '',
+    'New', '', '', g('lf_gtin'), g('lf_img'),
+    g('lf_family'), g('lf_type'), g('lf_cat'),
+    sku, '', '', '', '', '',
+    price?('PriceRef('+(LINK_PRODUCT.currency||'原站')+')'):'', price?price:''
+  ]];
+  const esc=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+  const csv='\uFEFF'+[header,...rows].map(r=>r.map(esc).join(',')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='noon_upload_from_link.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
 /* ---------- 导出报告 ---------- */
 function exportMD(){
   if(!results.length){$('report').value='暂无数据';return;}
@@ -1606,7 +1775,7 @@ function ssSearch(){
     }
     cards='<div class="small" style="margin-bottom:8px">'+title+'</div><div class="ss-grid">'+list.slice(0,18).map(x=>{
       const icon=iconFor(x.name);
-      const imgHtml=x.img?`<img src="${x.img}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><span class="ss-emoji" style="display:none">${icon}</span>`:`<span class="ss-emoji">${icon}</span>`;
+      const imgHtml=x.img?`<img src="${x.img}" referrerpolicy="no-referrer" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><span class="ss-emoji" style="display:none">${icon}</span>`:`<span class="ss-emoji">${icon}</span>`;
       const meta=x.dm?`<div class="ss-rating">💰 AED ${x.dm.price} · ★ ${x.dm.rating} · 💬 ${x.dm.reviews}</div>`:`<div class="ss-rating">📦 ${x.price} AED</div>`;
       return `<div class="ss-card">
         <div class="ss-img">${imgHtml}</div>
@@ -1655,7 +1824,7 @@ async function ssLiveNow(term){
     const scope=PROXY_ON?' / SHEIN / 速卖通 等全平台':(API_ON?(' / SHEIN / 速卖通 等（'+API_PROV+'）'):'');
     box.innerHTML='<div class="small" style="margin-bottom:8px">🔥 实时拉取 <b style="color:var(--noon)">'+items.length+'</b> 个真实商品（Noon / Amazon'+scope+'）</div><div class="ss-grid">'+items.map(x=>{
       const icon=iconFor(x.name||'');
-      const imgHtml=x.img?`<img src="${x.img}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><span class="ss-emoji" style="display:none">${icon}</span>`:`<span class="ss-emoji">${icon}</span>`;
+      const imgHtml=x.img?`<img src="${x.img}" referrerpolicy="no-referrer" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><span class="ss-emoji" style="display:none">${icon}</span>`:`<span class="ss-emoji">${icon}</span>`;
       const isNum=x.price&&/^\d+(\.\d+)?$/.test(x.price);
       const meta=(x.price?('💰 '+x.price+(isNum?' AED':'')):'')+(x.rating?(' · ★ '+x.rating):'')+(x.reviews?(' · 💬 '+x.reviews):'');
       const pf=x.platformName||(x.platform==='amazon'?'Amazon.ae':(x.platform==='noon'?'Noon':x.platform));
