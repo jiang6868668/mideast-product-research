@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>江少的选品参谋</title>
+<style>
+  :root{
+    --noon:#F5512C;        /* noon 品牌橙红 */
+    --noon-dark:#c83d1c;
+    --bg:#f6f7f9;
+    --card:#ffffff;
+    --line:#e6e8ec;
+    --txt:#222;
+    --muted:#7a828c;
+    --green:#1f9d55;
+    --yellow:#d99100;
+    --red:#d6453d;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--txt);font-size:14px;line-height:1.5}
+  header{background:linear-gradient(135deg,var(--noon),var(--noon-dark));color:#fff;padding:34px 24px;text-align:center}
+  header h1{margin:0;font-size:32px;font-weight:800;letter-spacing:-.5px}
+  header p{margin:12px 0 0;opacity:.92;font-size:16px}
+  details summary{cursor:pointer;list-style:none}
+  details summary::-webkit-details-marker{display:none}
+  details summary h2::after{content:' ▼';font-size:.8em;opacity:.7}
+  details[open] summary h2::after{content:' ▲'}
+  .wrap{max-width:1600px;margin:0 auto;padding:18px 16px 60px;display:flex;gap:18px;align-items:flex-start}
+  .main{flex:1;min-width:0;max-width:1180px;margin:0 auto}
+  .sidebar{width:240px;flex:none;position:sticky;top:18px;align-self:flex-start;display:flex;flex-direction:column;gap:14px}
+  .sidebar .card{padding:13px 14px;margin-bottom:0}
+  .sidebar .card h2{font-size:13px;margin:0 0 10px}
+  .sidebar a{color:var(--noon);text-decoration:none;font-size:12px;display:block;padding:5px 0;border-bottom:1px dashed #eee}
+  .sidebar a:hover{text-decoration:underline}
+  .sidebar .item{display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px dashed #eee;font-size:12px}
+  .sidebar .item:last-child,.sidebar a:last-child{border-bottom:none}
+  .sidebar .item i{flex:none;font-size:16px;margin-top:1px}
+  .sidebar .item b{display:block;color:#333;font-size:12px}
+  .sidebar .item span{color:var(--muted);font-size:11px}
+  @media(max-width:1180px){.sidebar{display:none}.wrap{padding:18px 12px 60px}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .card h2{margin:0 0 12px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .card h2 .tag{font-size:11px;font-weight:500;color:var(--muted);background:#f0f1f3;border-radius:6px;padding:2px 8px}
+  .grid{display:grid;gap:12px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:760px){.g2,.g3,.g4{grid-template-columns:1fr}}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+  input,select,textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff;color:var(--txt)}
+  textarea{font-family:ui-monospace,Consolas,monospace;font-size:12px;resize:vertical}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--noon)}
+  .btn{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;background:#eef0f3;color:#333}
+  .btn:hover{filter:brightness(.97)}
+  .btn.primary{background:var(--noon);color:#fff}
+  .btn.primary:hover{background:var(--noon-dark)}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
+  .btnrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  details summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--noon)}
+  details[open] summary{margin-bottom:10px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+  th{color:var(--muted);font-weight:600;font-size:12px;background:#fafbfc}
+  tbody tr{cursor:pointer}
+  tbody tr:hover{background:#fff7f4}
+  tbody tr.sel{background:#fff0ea}
+  .bar{height:8px;border-radius:5px;background:#eef0f3;overflow:hidden;min-width:80px}
+  .bar>i{display:block;height:100%;background:var(--noon)}
+  .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;color:#fff}
+  .p-good{background:var(--green)} .p-mid{background:var(--yellow)} .p-bad{background:var(--red)}
+  .score{font-weight:700;font-size:15px}
+  .price-result{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 20px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+  .price-main{display:flex;align-items:baseline;gap:8px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+  .price-label{font-size:13px;color:var(--muted)}
+  .price-num{font-size:42px;font-weight:800;color:var(--noon);line-height:1}
+  .price-unit{font-size:14px;color:var(--muted)}
+  .price-items{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 16px;font-size:13px}
+  .price-items>div{display:flex;flex-direction:column;gap:3px}
+  .pi-label{font-size:11px;color:var(--muted)}
+  .pi-val{font-weight:700;color:var(--text)}
+  @media(max-width:560px){.price-items{grid-template-columns:repeat(2,1fr)}}
+  .two{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
+  @media(max-width:760px){.two{grid-template-columns:1fr}}
+  .radar-box{display:flex;flex-direction:column;align-items:center}
+  .note{font-size:12px;color:var(--muted);margin-top:6px}
+  .small{font-size:11px;color:var(--muted)}
+  .del{cursor:pointer;color:var(--red);font-weight:700}
+  .hint{background:#fff8f2;border:1px solid #ffd9c4;color:#9a4a25;padding:10px 12px;border-radius:8px;font-size:12px;margin-bottom:14px}
+  code{background:#f0f1f3;padding:1px 5px;border-radius:4px;font-size:12px}
+  .empty{padding:24px;text-align:center;color:var(--muted)}
+  /* 选品搜索 */
+  .ss-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-top:4px}
+  .ss-card{border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;background:#fff;transition:.15s}
+  .ss-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-2px)}
+  .ss-img{height:150px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .ss-img img{width:100%;height:100%;object-fit:cover;display:block}
+  .ss-img .ss-emoji{font-size:54px;line-height:1}
+  .ss-pf{color:#fff;font-size:12px;font-weight:600;padding:5px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ss-body{padding:10px 12px;display:flex;flex-direction:column;gap:5px;flex:1}
+  .ss-name{font-weight:700;font-size:13px;line-height:1.35}
+  .ss-rating{font-size:12px;color:var(--muted)}
+  .ss-note{font-size:11px;color:var(--muted);line-height:1.4;flex:1}
+  .ss-btn{margin-top:6px;justify-content:center;font-size:12px;padding:7px 10px}
+  .ss-jump-wrap{margin-top:18px;padding:14px 14px 16px;border:1px dashed #ffb38a;background:#fff8f3;border-radius:12px}
+  .ss-jump-title{font-size:13px;color:#a8542a;margin-bottom:10px;font-weight:600}
+  .ss-jump-row{display:flex;flex-wrap:wrap;gap:8px}
+  .ss-jump{display:inline-flex;align-items:center;gap:5px;text-decoration:none;font-size:13px;color:#334;background:#fff;border:1.5px solid #ccc;border-radius:8px;padding:7px 11px;transition:.15s}
+  .ss-jump:hover{background:#fff0e6;transform:translateY(-1px);box-shadow:0 3px 8px rgba(0,0,0,.08)}
+  /* 多平台热销雷达 */
+  .plat-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .ptab{border:1px solid #d9dde3;background:#fff;border-radius:20px;padding:7px 14px;font-size:13px;cursor:pointer;color:#445;transition:.15s}
+  .ptab:hover{border-color:var(--c)}
+  .ptab.on{background:var(--c);border-color:var(--c);color:#fff;font-weight:700}
+  .plat-card{border:1px solid #e2e5ea;border-radius:12px;padding:14px 16px}
+  .plat-head{padding:10px 12px;border-radius:8px;margin-bottom:10px;font-size:15px}
+  .plat-meta{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;font-size:12px;margin-bottom:12px}
+  .plat-meta>div{white-space:normal}
+  @media(max-width:760px){.plat-meta{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🛒 江少的选品参谋</h1>
+  <p>覆盖 UAE / 沙特 / 埃及 · 六维评分 · 真实利润测算 · 单文件离线可用</p>
+</header>
+
+<div class="wrap">
+
+  <!-- 左侧边栏：电商热点 -->
+  <aside class="sidebar sidebar-left">
+    <div class="card">
+      <h2>🔥 中东电商热点</h2>
+      <div class="item"><i>🐱</i><div><b>宠物经济爆发</b><span>阿联酋在线宠物用品年增 30%+，猫咪轻小件成蓝海。</span></div></div>
+      <div class="item"><i>🏋️</i><div><b>Vision 2030 健身潮</b><span>沙特大力投资体育，瑜伽、户外、运动服需求上涨。</span></div></div>
+      <div class="item"><i>🛒</i><div><b>本地履约流量倾斜</b><span>noon FBN / Amazon FBA Listing 权重与转化明显高于自发货。</span></div></div>
+      <div class="item"><i>🌙</i><div><b>斋月备货窗口</b><span>提前 6-8 周备货到仓，家居、礼品、服饰流量最大。</span></div></div>
+      <div class="item"><i>💚</i><div><b>沙特国庆（9.23）</b><span>绿色/金色礼品、装饰、派对用品短期爆发。</span></div></div>
+      <div class="item"><i>🌡️</i><div><b>夏季高温刚需</b><span>凉感用品、防晒、车载/户外制冷小电器热卖。</span></div></div>
+    </div>
+    <div class="card">
+      <h2>📅 运营日历</h2>
+      <div class="item"><i>1️⃣</i><div><b>1-2 月</b><span>斋月备货 + 情人节礼品。</span></div></div>
+      <div class="item"><i>3️⃣</i><div><b>3-4 月</b><span>斋月大促、开斋节礼品。</span></div></div>
+      <div class="item"><i>6️⃣</i><div><b>6-8 月</b><span>夏季防晒/凉感、返校季文具。</span></div></div>
+      <div class="item"><i>9️⃣</i><div><b>9 月</b><span>沙特国庆绿金主题。</span></div></div>
+      <div class="item"><i>1️⃣1️⃣</i><div><b>11 月</b><span>Yellow Friday / 黑五大促。</span></div></div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+  <div class="hint">
+    💡 <b>怎么用：</b>先用「🔍 选品搜索」按<b>类目 + 关键词</b>从 13 个平台筛出真实在售商品（带官方图/价格/评分/链接）；再在「参数设置」里调整佣金率/汇率/权重，用「定价计算器」反推建议售价、利润、VAT 与达标情况；下方「选品分析结果」展示候选品综合评分。
+  </div>
+
+  <!-- 选品搜索 -->
+  <div class="card">
+    <h2>🔍 选品搜索 <span class="tag">跨 13 平台 · 按类目 + 关键词筛选真实商品</span></h2>
+    <div class="grid g4">
+      <div style="grid-column:1 / -1">
+        <label>🔎 输入关键词或类目（如：无线耳机 / 宠物 / 美妆个护 / 阿拉伯长袍）</label>
+        <input id="ss_q" type="text" placeholder="输入关键词或类目，输入即筛选并自动拉取真实商品；按回车立即刷新…" oninput="ssSearch();ssLiveDebounced()" onkeydown="if(event.key==='Enter'){ssLiveNow()}" style="width:100%;padding:11px 13px;font-size:15px;border:1px solid var(--line);border-radius:10px;outline:none;box-sizing:border-box">
+      </div>
+      <div><label>类目（可不选，留空=自动推断）</label><select id="ss_cat" onchange="ssSearch();ssLiveDebounced()"></select></div>
+      <div><label>平台（可选）</label><select id="ss_plat" onchange="ssSearch();ssLiveDebounced()"></select></div>
+      <div style="display:flex;align-items:flex-end;gap:8px">
+        <button class="btn primary" onclick="ssSearch();ssLive()">🔍 搜索</button>
+        <button class="btn" onclick="ssReset()">重置</button>
+      </div>
+    </div>
+    <div id="ssResult" style="margin-top:14px"></div>
+    <div id="ssLive" style="margin-top:14px"></div>
+  </div>
+
+  <!-- 参数设置 -->
+  <div class="card">
+    <h2>⚙️ 参数设置 <span class="tag">按你的实际数据调整</span></h2>
+    <details>
+      <summary>展开 / 收起 参数</summary>
+      <div class="grid g3">
+        <div>
+          <label>汇率：1 AED（迪拉姆） = ? CNY（人民币）</label>
+          <input id="rate" type="number" step="0.01" value="1.95" oninput="priceCalc()">
+        </div>
+        <div>
+          <label>头程物流费率（AED / kg，到中东仓）</label>
+          <input id="firstMile" type="number" step="0.5" value="18" oninput="priceCalc()">
+        </div>
+        <div>
+          <label>FBN 基础费（AED / 件）</label>
+          <input id="fbnBase" type="number" step="0.5" value="4" oninput="priceCalc()">
+        </div>
+        <div>
+          <label>FBN 重量系数（AED / kg）</label>
+          <input id="fbnPerKg" type="number" step="0.5" value="3" oninput="priceCalc()">
+        </div>
+        <div>
+          <label>FBN 尺寸附加（AED / 超出门槛）</label>
+          <input id="fbnSize" type="number" step="0.5" value="5" oninput="priceCalc()">
+        </div>
+        <div>
+          <label>体积重换算除数（默认 5000）</label>
+          <input id="volDiv" type="number" step="100" value="5000" oninput="priceCalc()">
+        </div>
+      </div>
+
+      <div class="grid g2" style="margin-top:12px">
+        <div>
+          <label>各品类平台佣金率（JSON，可改）</label>
+          <textarea id="commission" rows="7" oninput="priceCalc()">{
+  "电子电器": 0.07,
+  "手机配件": 0.08,
+  "电脑办公": 0.07,
+  "时尚服饰": 0.12,
+  "鞋靴箱包": 0.12,
+  "美妆个护": 0.15,
+  "珠宝手表": 0.15,
+  "家居家纺": 0.10,
+  "厨房用品": 0.10,
+  "母婴玩具": 0.10,
+  "运动户外": 0.12,
+  "汽车用品": 0.10,
+  "食品保健": 0.15,
+  "其他": 0.10
+}</textarea>
+        </div>
+        <div>
+          <label>六维权重（JSON，总和建议=1，会自动归一化）</label>
+          <textarea id="weights" rows="7">{
+  "demand": 0.20,
+  "competition": 0.15,
+  "profit": 0.25,
+  "logistics": 0.15,
+  "compliance": 0.15,
+  "culture": 0.10
+}</textarea>
+          <p class="small">维度说明：demand=市场需求，competition=竞争友好度（竞争越低越高），profit=利润空间，logistics=物流友好度，compliance=合规风险（认证/敏感品），culture=文化季节适配。</p>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- 定价计算器 -->
+  <div class="card">
+    <h2>💰 定价计算器 / 定价表 <span class="tag" id="pc_tag">按 noon 佣金·汇率·物流反推</span></h2>
+    <div class="grid g4">
+      <div><label>目标平台</label>
+        <select id="pc_plat" onchange="priceCalc()">
+          <option value="noon">🟢 Noon（中东本土）</option>
+          <option value="amazon">🔵 Amazon.ae/sa（FBA）</option>
+          <option value="shein">🟣 SHEIN 中东站（半托管）</option>
+          <option value="namshi">🟠 Namshi（海湾时尚）</option>
+          <option value="trendyol">⚪ Trendyol（土耳其进GCC）</option>
+          <option value="temu">🔴 Temu 中东站（全托管）</option>
+          <option value="ali">🟡 AliExpress 中东站</option>
+        </select>
+      </div>
+      <div id="pc_modeBox"><label>发货模式</label>
+        <select id="pc_noonMode" onchange="priceCalc()"></select>
+        <div id="pc_modeInfo" class="small" style="margin-top:4px;color:var(--muted)"></div>
+      </div>
+      <div><label>采购成本 CNY</label><input id="pc_cost" type="number" step="0.5" value="60" oninput="priceCalc()"></div>
+      <div><label>品类</label>
+        <select id="pc_cat" onchange="priceCalc()">
+          <option>电子电器</option><option>手机配件</option><option>电脑办公</option>
+          <option>时尚服饰</option><option>鞋靴箱包</option><option>美妆个护</option>
+          <option>珠宝手表</option><option>家居家纺</option><option>厨房用品</option>
+          <option>母婴玩具</option><option>运动户外</option><option>汽车用品</option>
+          <option>宠物用品</option><option>办公文具</option>
+          <option>食品保健</option><option>其他</option>
+        </select>
+      </div>
+      <div><label>目标利润率 %</label><input id="pc_target" type="number" step="1" value="30" oninput="priceCalc()"></div>
+      <div><label>销售市场(VAT)</label>
+        <select id="pc_vat" onchange="priceCalc()">
+          <option value="0.05">🇦🇪 阿联酋 UAE 5%</option>
+          <option value="0.15">🇸🇦 沙特 KSA 15%</option>
+          <option value="0.05">🇰🇼 科威特 5%</option>
+          <option value="0.05">🇶🇦 卡塔尔 5%</option>
+          <option value="0.05">🇴🇲 阿曼 5%</option>
+          <option value="0.10">🇧🇭 巴林 10%</option>
+        </select>
+      </div>
+      <div><label>实重 kg</label><input id="pc_w" type="number" step="0.01" value="0.5" oninput="priceCalc()"></div>
+      <div><label>长 cm</label><input id="pc_l" type="number" step="0.5" value="20" oninput="priceCalc()"></div>
+      <div><label>宽 cm</label><input id="pc_wd" type="number" step="0.5" value="15" oninput="priceCalc()"></div>
+      <div><label>高 cm</label><input id="pc_h" type="number" step="0.5" value="10" oninput="priceCalc()"></div>
+      <div><label style="display:flex;align-items:center;gap:6px;margin-top:18px"><input type="checkbox" id="pc_fbn" checked disabled onchange="priceCalc()" style="width:auto"> <span id="pc_fbnLabel">走平台官方仓/物流</span></label></div>
+    </div>
+    <div class="btnrow">
+      <button class="btn primary" onclick="priceCalc()">📊 生成/刷新定价表</button>
+      <button class="btn" onclick="loadSelectedToPrice()">📥 用选中候选品填充</button>
+      <span class="small" id="pc_feeSource">费率：Noon FBN 模板</span>
+    </div>
+    <div id="priceSummary" style="margin-top:12px;font-size:13px"></div>
+    <div id="priceResult" class="price-result" style="margin-top:12px;display:none">
+      <div class="price-main">
+        <div class="price-label">建议售价（含税）</div>
+        <div class="price-num" id="pr_suggest">—</div>
+        <div class="price-unit">AED</div>
+      </div>
+      <div class="price-items">
+        <div><span class="pi-label">单件利润</span><span class="pi-val" id="pr_profit">—</span></div>
+        <div><span class="pi-label">利润率</span><span class="pi-val" id="pr_margin">—</span></div>
+        <div><span class="pi-label">保本价(含税)</span><span class="pi-val" id="pr_breakeven">—</span></div>
+        <div><span class="pi-label">固定成本</span><span class="pi-val" id="pr_base">—</span></div>
+        <div><span class="pi-label">实际佣金率</span><span class="pi-val" id="pr_comm">—</span></div>
+        <div><span class="pi-label">VAT 税费</span><span class="pi-val" id="pr_vat">—</span></div>
+        <div><span class="pi-label">税前净收入</span><span class="pi-val" id="pr_net">—</span></div>
+        <div><span class="pi-label">达标状态</span><span id="pr_status">—</span></div>
+      </div>
+    </div>
+    <p class="small" style="margin-top:8px" id="pc_note">说明：基于公开调研「FBN 卖家佣金打 7 折」估算；未含广告费(CPC)、退货；VAT 按所选市场单列，利润/净收入为税前。建议售价=含税消费者价，反推达成目标利润率。</p>
+  </div>
+
+  <!-- 热销赛道参考 -->
+  <div class="card">
+    <h2>🔥 noon 中东热销赛道参考 <span class="tag">公开来源整理 · 非实时榜单</span></h2>
+    <p class="small" style="margin:-4px 0 10px">以下热销品类基于公开行业来源整理（2026-08 检索），非 noon 实时销量榜。命中赛道的候选会在下方「赛道」列打 🔥 并高亮。</p>
+    <div class="small" style="margin-bottom:10px">📎 数据来源：
+      <a href="https://noon.menglar.com/article/operate/31279" target="_blank" style="color:var(--noon)">noon 选品指南(menglar)</a> ·
+      <a href="https://www.qicaiying.cn/archives/9135" target="_blank" style="color:var(--noon)">2026最赚钱10品类+佣金表(qicaiying)</a> ·
+      <a href="http://noon.shanuoo.com/article/ecommerce/31156" target="_blank" style="color:var(--noon)">Noon 选品避坑(shanuoo)</a> ·
+      <a href="http://noon.shanuoo.com/electricity-detail/84506" target="_blank" style="color:var(--noon)">Noon 热销品类概览(shanuoo)</a>
+    </div>
+
+    <div style="background:#fff7f4;border:1px solid #ffd0bf;border-radius:10px;padding:12px 14px;margin-bottom:12px">
+      <div style="font-weight:700;color:#c83d1c;margin-bottom:8px">🏆 本期数据推荐：宠物用品（猫咪轻小件）· 六维综合适合度 8.2 居首</div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th>具体商品（可直接上架）</th><th>货源搜索词</th><th>客单价 AED</th><th>约重 kg</th><th>中东卖点 / 合规</th>
+          </tr></thead>
+          <tbody id="petBody"></tbody>
+        </table>
+      </div>
+      <div class="small" style="margin-top:8px">推荐逻辑：需求增长（阿联酋 +30% · GCC 在线宠物用品零售 12 亿美元）+ 真蓝海（进口依赖 75-85%）+ 物流友好（轻小件）+ 合规简单（非食品类无 SFDA/SASO 强制）+ 文化适配（猫受喜爱无宗教冲突）+ 复购强。货源搜 1688 / 速卖通，上架 noon 走 FBN。来源：Ken Research / IMARC / IndexBox / qicaiying（2026）。</div>
+    </div>
+
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr>
+          <th>品类</th><th>代表热销品</th><th>热度</th><th>建议客单价(AED)</th><th>竞争激烈</th><th>选品要点 / 坑</th><th>我的候选</th>
+        </tr></thead>
+        <tbody id="hotBody">      </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 多平台热销雷达 -->
+  <div class="card">
+    <h2>🌐 中东多平台热销雷达 <span class="tag">联网行业数据整理 · 跨 13 平台</span></h2>
+    <p class="small" style="margin:-4px 0 10px">以下热销品基于公开行业来源与平台官方数据整理（2026-08 检索），非各平台实时销量榜。点上方标签切换平台看具体商品。</p>
+    <div class="small" style="margin-bottom:10px">📎 数据来源：
+      <a href="https://sell.amazon.sa/selling-online-blog/trending-products-what-to-sell-on-amazon" target="_blank" style="color:var(--noon)">Amazon 卖家大学</a> ·
+      <a href="https://metricscart.com/bestseller-reports/amazon-ksa/brands/147" target="_blank" style="color:var(--noon)">MetricsCart KSA 榜</a> ·
+      <a href="https://www.163.com/dy/article/L06STCTR0552NTBE.html" target="_blank" style="color:var(--noon)">SHEIN 国庆爆品(163)</a> ·
+      <a href="https://www.namshi.com/uae-en/" target="_blank" style="color:var(--noon)">Namshi 前台</a> ·
+      <a href="https://m.haibeigoods.com/article/NBNrJlPxgsE" target="_blank" style="color:var(--noon)">海贝分销平台榜</a> ·
+      <a href="https://xmshredder.com/xinwendongtai/xingyezixun/2665.html" target="_blank" style="color:var(--noon)">xmshredder 国庆选品</a>
+    </div>
+    <div id="platTabs" class="plat-tabs"></div>
+    <div id="platBody"></div>
+  </div>
+
+  <!-- 结果 -->
+  <div class="card">
+    <h2>📊 选品分析结果 <span class="tag" id="countTag">0 个候选</span></h2>
+    <div class="btnrow">
+      <button class="btn primary" onclick="recompute()">🔄 重新计算</button>
+      <button class="btn" onclick="exportMD()">📤 导出分析报告</button>
+      <button class="btn ghost" onclick="printReport()">🖨️ 打印 / 存 PDF</button>
+    </div>
+
+    <div class="two" style="margin-top:14px">
+      <div style="overflow-x:auto">
+        <table id="rankTable">
+          <thead>
+            <tr>
+              <th>#</th><th>产品</th><th>品类</th><th>赛道</th><th>售价</th><th>利润</th><th>利润率</th>
+              <th>综合分</th><th>评级</th><th></th>
+            </tr>
+          </thead>
+      <tbody id="rankBody">
+        <tr><td colspan="11" class="empty">暂无数据，请先录入或载入示例</td></tr>
+      </tbody>
+        </table>
+      </div>
+      <div class="radar-box">
+        <div style="font-size:13px;font-weight:600;margin-bottom:4px" id="radarTitle">六维雷达图</div>
+        <div id="radar" style="width:100%"></div>
+        <div id="radarDetail" class="small" style="margin-top:8px;text-align:left;width:100%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📋 选品建议报告</h2>
+    <textarea id="report" rows="14" readonly placeholder="点「导出分析报告」生成文字版，可复制或打印"></textarea>
+  </div>
+
+  <p class="note">
+    说明：本工具所有费率为<b>经验估算值</b>，noon 实际佣金、FBN 费用、Saber 认证成本以官方账单为准。利润测算未含广告费(CPC)、退货、VAT(沙特 15% / UAE 5%)等，
+    正式备货前请自行核对。雷达图与排名完全离线渲染，无需联网。
+  </p>
+  </main>
+
+  <!-- 右侧边栏：服务网站 & 数据网站 -->
+  <aside class="sidebar sidebar-right">
+    <div class="card">
+      <h2>🏪 平台服务后台</h2>
+      <a href="https://seller.noon.com/" target="_blank" rel="noopener">Noon Seller Central</a>
+      <a href="https://sellercentral.amazon.ae/" target="_blank" rel="noopener">Amazon.ae 卖家后台</a>
+      <a href="https://sellercentral.amazon.sa/" target="_blank" rel="noopener">Amazon.sa 卖家后台</a>
+      <a href="https://seller.shein.com/" target="_blank" rel="noopener">SHEIN 卖家后台</a>
+      <a href="https://seller.temu.com/" target="_blank" rel="noopener">Temu 卖家中心</a>
+      <a href="https://sell.aliexpress.com/" target="_blank" rel="noopener">AliExpress 卖家</a>
+      <a href="https://www.namshi.com/" target="_blank" rel="noopener">Namshi 前台选品</a>
+      <a href="https://www.trendyol.com/" target="_blank" rel="noopener">Trendyol 前台选品</a>
+      <a href="https://www.carrefouruae.com/" target="_blank" rel="noopener">Carrefour UAE 前台</a>
+      <a href="https://uae.sharafdg.com/" target="_blank" rel="noopener">Sharaf DG 前台</a>
+      <a href="https://www.mumzworld.com/" target="_blank" rel="noopener">Mumzworld 前台</a>
+      <a href="https://www.6thstreet.com/" target="_blank" rel="noopener">6th Street 前台</a>
+    </div>
+    <div class="card">
+      <h2>📊 数据与认证网站</h2>
+      <a href="https://saber.sa/" target="_blank" rel="noopener">沙特 Saber 认证系统</a>
+      <a href="https://www.esma.gov.ae/" target="_blank" rel="noopener">阿联酋 ESMA 认证</a>
+      <a href="https://noon.menglar.com/" target="_blank" rel="noopener">noon 卖家导航(menglar)</a>
+      <a href="https://www.qicaiying.cn/" target="_blank" rel="noopener">柒彩盈(qicaiying)</a>
+      <a href="http://noon.shanuoo.com/" target="_blank" rel="noopener">沙努努 noon 数据</a>
+      <a href="https://metricscart.com/" target="_blank" rel="noopener">MetricsCart 榜单</a>
+      <a href="https://m.haibeigoods.com/" target="_blank" rel="noopener">海贝分销</a>
+      <a href="https://www.accio.com/" target="_blank" rel="noopener">Accio 中东电商数据</a>
+      <a href="https://www.similarweb.com/" target="_blank" rel="noopener">Similarweb 流量分析</a>
+    </div>
+    <div class="card">
+      <h2>🚚 物流 / 货代参考</h2>
+      <a href="https://www.imile.com/" target="_blank" rel="noopener">iMile（中东本土物流）</a>
+      <a href="https://www.jtexpress.com/" target="_blank" rel="noopener">极兔速递</a>
+      <a href="https://www.aramex.com/" target="_blank" rel="noopener">Aramex</a>
+      <a href="https://www.shipbob.com/" target="_blank" rel="noopener">ShipBob（海外仓）</a>
+    </div>
+  </aside>
+
+</div>
+
+<script>
+/* ---------- 工具函数 ---------- */
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function num(id){const v=parseFloat(document.getElementById(id).value);return isNaN(v)?0:v;}
+function $(id){return document.getElementById(id);}
+
+let products=[];   // 候选品
+let results=[];    // 计算结果
+let selected=-1;
+
+/* ---------- noon 中东热销赛道参考（经验整理，非实时抓取） ---------- */
+const HOT=[
+  {cat:'手机配件',  item:'手机壳/膜/充电宝/车载支架/无线耳机',        heat:9, low:25,  high:120, comp:8, src:'qicaiying,shanuoo', tip:'3C是noon最大流量品类，竞争最激烈；带蓝牙需CITC认证。走FBN佣金打7折更划算'},
+  {cat:'电子电器',  item:'智能手表/蓝牙耳机/音箱/小家电',            heat:8, low:60,  high:300, comp:7, src:'shanuoo', tip:'客单高、带电需合规申报；家电注意电压插头标准(英标BS1363)'},
+  {cat:'美妆个护',  item:'香水/护肤/男士grooming/防晒',             heat:9, low:40,  high:250, comp:7, src:'qicaiying,shanuoo', tip:'中东女性美妆消费力强(阿联酋人均全球前五)；含酒精/护肤品需SFDA合规，清真认证更易入沙特'},
+  {cat:'时尚服饰',  item:'Abaya长袍/Hijab/男式Thobe/运动鞋',         heat:8, low:70,  high:250, comp:6, src:'qicaiying,shanuoo,menglar', tip:'本土化强；女装主图勿露肤，用无头模特/符合习俗；版型贴合中东身材'},
+  {cat:'家居家纺',  item:'Ramadan灯饰/收纳/空气炸锅/床品',           heat:8, low:35,  high:200, comp:6, src:'menglar,qicaiying,shanuoo', tip:'斋月乔迁礼赠拉高床品窗帘；迪拜高层公寓收纳需求旺；灯串带电需申报'},
+  {cat:'厨房用品',  item:'空气炸锅/料理机/耐高温餐具',               heat:7, low:80,  high:400, comp:6, src:'menglar,qicaiying', tip:'中东家庭大(5-7人)、偏炖煮烤肉，大容量耐清洁厨具适配；偏重建议海运'},
+  {cat:'运动户外',  item:'瑜伽垫/健身小件/户外炊具',                heat:7, low:30,  high:150, comp:5, src:'qicaiying,menglar', tip:'沙特Vision2030推健身，noon运动类2024增速45%+；冬季(11-3月)户外短窗口'},
+  {cat:'母婴玩具',  item:'儿童玩具/婴儿护理/STEM早教',               heat:7, low:40,  high:250, comp:7, src:'menglar,qicaiying,shanuoo', tip:'多强制Saber/SASO认证；阿拉伯语早教机/点读笔有差异化；婴儿品优先EN71/CE'},
+  {cat:'汽车用品',  item:'车载香薰/支架/记录仪/清洁',                heat:7, low:20,  high:120, comp:6, src:'qicaiying', tip:'中东私家车渗透率全球最高(沙特100人80+车)，愿为汽配溢价；复购好'},
+  {cat:'宠物用品',  item:'剑麻猫抓柱/凉感猫窝/猫薄荷玩具/饮水机/喂食器/针梳/猫砂盆', heat:8, low:25, high:220, comp:4, src:'qicaiying,KenResearch,IMARC,IndexBox', tip:'阿联酋宠物市场年增30%+、GCC在线宠物用品零售达12亿美元、进口依赖75-85%供给短缺；猫咪占主导(沙特56.2%)，非食品类无SFDA强制认证，轻小件蓝海首选'},
+  {cat:'珠宝手表',  item:'时尚首饰/智能表带/手表',                   heat:6, low:50,  high:300, comp:6, src:'shanuoo', tip:'客单高但信任门槛高；黑五/开斋节促销季转化显著提升，重图片品牌感'},
+  {cat:'办公文具',  item:'学生文具/人体工学椅/绘画用品',             heat:5, low:5,   high:300, comp:5, src:'qicaiying', tip:'中东年轻人口(25岁以下45%+)，教育需求强；远程办公带动效率品'}
+];
+function hotInfo(cat){return HOT.find(h=>h.cat===cat)||null;}
+
+/* ---------- 读取设置 ---------- */
+function readSettings(){
+  let commission={}, weights={};
+  try{commission=JSON.parse($('commission').value);}catch(e){commission={"其他":0.10};}
+  try{weights=JSON.parse($('weights').value);}catch(e){weights={demand:.2,competition:.15,profit:.25,logistics:.15,compliance:.15,culture:.1};}
+  return {
+    rate:num('rate')||1.95,
+    firstMile:num('firstMile')||18,
+    fbnBase:num('fbnBase')||4,
+    fbnPerKg:num('fbnPerKg')||3,
+    fbnSize:num('fbnSize')||5,
+    volDiv:num('volDiv')||5000,
+    commission, weights
+  };
+}
+
+/* ---------- 核心计算 ---------- */
+function compute(p,s){
+  const comm=(s.commission[p.cat]!==undefined)?s.commission[p.cat]:(s.commission['其他']!==undefined?s.commission['其他']:0.10);
+  const vol=(p.l*p.w*p.h)/s.volDiv;
+  const cw=Math.max(p.weight,vol);                       // 计费重量
+  const fbn=s.fbnBase + s.fbnPerKg*cw + Math.max(0,(p.l+p.w+p.h)/100-1)*s.fbnSize;
+  const firstMile=s.firstMile*cw;
+  const costAED=p.cost/s.rate;
+  const commission=p.price*comm;
+  const profit=p.price-commission-fbn-firstMile-costAED;
+  const margin=p.price>0?profit/p.price:0;
+
+  const demandScore=clamp(p.demand*10,0,100);
+  const compScore=clamp((11-p.comp)*10,0,100);
+  const profitScore=margin<=0?0:clamp(10+(margin/0.5)*90,0,100);
+  const logiScore=cw<=0.5?100:(cw>=8?8:clamp(100-(cw-0.5)/(8-0.5)*92,0,100));
+
+  let certScore=100;
+  if(p.cert==='Saber')certScore-=30;
+  else if(p.cert==='清真')certScore-=25;
+  else if(p.cert==='其他')certScore-=15;
+  if(p.sens==='带电')certScore-=15;
+  else if(p.sens==='液体粉末')certScore-=20;
+  else if(p.sens==='儿童用品')certScore-=10;
+  certScore=clamp(certScore,0,100);
+
+  const seasonMap={'常青':100,'斋月':95,'夏季':90,'冬季':70,'宗教敏感':40};
+  const seasonScore=seasonMap[p.season]!==undefined?seasonMap[p.season]:100;
+
+  const w=s.weights;
+  const wsum=(w.demand||0)+(w.competition||0)+(w.profit||0)+(w.logistics||0)+(w.compliance||0)+(w.culture||0)||1;
+  const total=(
+    demandScore*(w.demand||0)+compScore*(w.competition||0)+profitScore*(w.profit||0)+
+    logiScore*(w.logistics||0)+certScore*(w.compliance||0)+seasonScore*(w.culture||0)
+  )/wsum;
+
+  return {comm,cw,fbn,firstMile,costAED,commission,profit,margin,
+    scores:{demand:demandScore,competition:compScore,profit:profitScore,logistics:logiScore,compliance:certScore,culture:seasonScore},
+    total};
+}
+
+/* ---------- 选品建议生成 ---------- */
+function buildAdvice(p,r){
+  const hot=hotInfo(p.cat);
+  const tips=[];
+  if(hot){
+    tips.push(`处于热销赛道「${p.cat}」（热度${hot.heat}/10），可借赛道流量起量`);
+    if(p.price<hot.low) tips.push(`定价 ${p.price} AED 低于赛道建议区间 ${hot.low}-${hot.high}，有提价空间或打性价比`);
+    else if(p.price>hot.high) tips.push(`定价 ${p.price} AED 高于赛道建议区间 ${hot.low}-${hot.high}，需强差异化支撑`);
+    else tips.push(`定价 ${p.price} AED 落在赛道建议区间 ${hot.low}-${hot.high}，合理`);
+  } else {
+    tips.push('品类不在内置热销榜，建议先用 noon 前台 bestseller 验证真实需求');
+  }
+  if(p.season==='斋月') tips.push('斋月强季节性：提前约2个月完成备货上架，卡准流量高峰');
+  else if(p.season==='夏季') tips.push('夏季刚需：3-9月为销售旺季，注意防晒/制冷类目');
+  if(p.cert==='Saber') tips.push('沙特强制 Saber/SCSAS：出货前完成 PC+SC 证书，预留2-4周');
+  else if(p.cert==='清真') tips.push('食品/个护需清真认证(Halal)，标签含阿拉伯语');
+  if(p.sens==='带电') tips.push('带电产品物流需合规申报，避免货代拒收');
+  if(p.sens==='液体粉末') tips.push('液体/粉末属敏感品，走专项渠道并备齐成分说明');
+  if(p.sens==='儿童用品') tips.push('儿童用品认证与标签要求严，优先做合规款');
+  if(r.cw>5) tips.push('计费重量偏大，建议海运入仓降成本；FBN 费用偏高需摊薄');
+  else if(r.cw<=0.5) tips.push('轻小件物流友好，可走空运快速测款');
+  if(r.margin<0.15) tips.push('利润率<15%，优先压采购成本或微提价，否则广告容错低');
+  else if(r.margin>0.4) tips.push('利润率健康(>40%)，可加大广告投入冲量');
+  const fits=getFitPlatforms(p.cat);
+  if(fits.length){
+    const names=fits.map(f=>f.name.replace(' 中东站','')).join('、');
+    tips.push('优先上架平台：'+names+'（该品类属其热销赛道，流量更匹配）');
+  } else {
+    tips.push('该品类合规门槛高（如食品保健需清真/SFDA），建议先验证认证再定平台');
+  }
+  return tips;
+}
+
+/* ---------- 中东多平台热销雷达（联网行业数据，2026-08 检索） ---------- */
+const PLATFORMS=[
+  {key:'noon',name:'Noon',flag:'🟢',color:'#21a67a',icon:'<img src=\"images/logos/noon.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+   role:'中东本土综合电商龙头（沙特/阿联酋/埃及）· 中文后台+新店流量扶持',
+   best:['3C电子与智能小家电','时尚服饰(Thobe/Abaya)','美妆个护(Oud香水)','家居Majlis用品','节日装饰&礼品'],
+   hot:[
+    ['阿拉伯语菜单空气炸锅','55–120','智能小家电·斋月增量','air fryer arabic menu'],
+    ['男士 Thobe 长袍','70–180','本地化强·文化适配','men thobe'],
+    ['女士刺绣 Abaya','90–250','斋月/国庆增量·需GCC纺织标准','embroidered abaya'],
+    ['Oud/Attar 木质调男士香水','80–300','高客单·高复购','oud perfume mens'],
+    ['Dallah 阿拉伯咖啡壶','40–150','Majlis 刚需·礼品类','arabic coffee dallah'],
+    ['LED 串灯 / Eid 灯笼','25–90','斋月单日曾超 2 万件','eid lantern led'],
+    ['绿金沙特国庆礼品盒','30–120','9月国庆·节庆组合','saudi national day gift box']
+  ,
+    ['手机快充线/充电器套装','15–50','3C配件刚需','phone charger cable set'],
+    ['沙特风味椰枣礼盒','40–120','节庆送礼·高复购','dates gift box'],
+    ['汽车手机支架/充电器','30–100','车载刚需','car phone holder charger'],
+    ['男士阿拉伯头巾/头箍','30–90','传统服饰配件','men shemagh ghutra'],
+    ['USB-C 扩展坞/Hub','50–180','办公效率','usb c hub adapter'],
+    ['便携蓝牙键盘','60–200','移动办公','bluetooth keyboard'],
+    ['LED 台灯/护眼灯','50–150','家庭办公','led desk lamp'],
+    ['旅行收纳袋套装','30–90','出行刚需','travel packing cubes'],['无线降噪耳机','69.55','Noon 真实在售 · ★4.4 · 57914评','wireless earbuds'],['智能手表/手环','459','Noon 真实在售 · ★4.5 · 95评','smart watch'],['扫地机器人','498.99','Noon 真实在售 · ★4.5 · 160评','robot vacuum cleaner'],['LED 氛围灯带','45','Noon 真实在售 · ★4.1 · 250评','led strip lights'],['电竞椅','79.05','Noon 真实在售','gaming chair'],['便携榨汁杯','163','Noon 真实在售 · ★4.5 · 242评','portable blender'],['电动牙刷','104.85','Noon 真实在售 · ★4.4 · 974评','electric toothbrush'],['保温水杯','145.5','Noon 真实在售 · ★4.7 · 7评','insulated water bottle'],['瑜伽垫','59.95','Noon 真实在售 · ★4.5 · 80评','yoga mat'],['蓝牙音箱','79','Noon 真实在售 · ★4.7 · 778评','bluetooth speaker']],
+   price:'客单价 $80+ · Yellow Friday 大促单日破 $2 亿',
+   pit:'带电产品需 CE/FCC + 沙特 Saber/SFDA 清关；新店有中文后台流量扶持',
+   good:'中低客单促销品、潮流电子、快时尚、节日品',
+   src:'xmshredder 国庆选品, qicaiying, menglar'},
+  {key:'amazon',name:'Amazon.ae / Amazon.sa',flag:'🔵',color:'#ff9900',icon:'<img src=\"images/logos/amazon.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+   role:'综合电商（FBA成熟·Prime会员沙特>30%）· 标品/中高端定位',
+   best:['消费电子','家居厨房','美妆个护','时尚运动','宠物用品'],
+   hot:[
+    ['Echo Dot 智能音箱(念古兰经)','110–240','会念 Quran·Alexa·Khaleeji 语音','echo dot arabic'],
+    ['Kindle / Paperwhite','300–700','常年畅销·电子书刚需','kindle paperwhite'],
+    ['PlayStation 5 手柄','180–300','游戏消费全球最高之一','ps5 controller'],
+    ['旅行收纳袋 6件套装','40–90','行李类 bestseller·灰色最热','travel organizer 6 set'],
+    ['空气炸锅 / 扫地机器人','200–600','实用省时·家居爆款','air fryer robot vacuum'],
+    ['护肤精华 / 天然有机','50–250','Argan oil·长效香氛偏好','argan oil serum'],
+    ['TWS 降噪耳机($25-50区间)','90–185','无线耳机最畅销段','wireless earbuds'],
+    ['宠物用品(Amazon Basics)','25–60','KSA 8 品类·高评分复购','cat scratching post']
+  ,
+    ['机器人吸尘器','500–1500','智能家居清洁','robot vacuum cleaner'],
+    ['电动剃须刀','100–400','男士个护','electric shaver men'],
+    ['运动水壶/摇摇杯','30–90','健身补水','sports water bottle'],
+    ['儿童学习平板','200–600','教育电子','kids learning tablet'],
+    ['无线鼠标/键盘套装','80–250','办公配件','wireless mouse keyboard'],
+    ['行李箱 20/24寸','200–600','旅行刚需','luggage suitcase set'],
+    ['空气净化器','300–900','家庭健康','air purifier home']],
+   price:'客单价偏高（站内多为 SAR≈AED）· FBA 时效强 · 评论/品牌背书重',
+   pit:'带电需 CE/FCC + Saber；品牌备案/Vine 积累评测；标品竞争强',
+   good:'有品牌属性、高客单、需 FBA 时效的标品',
+   src:'sell.amazon.sa, metricscart KSA, worldcompanysetup, accio'},
+  {key:'shein',name:'SHEIN 中东站',flag:'🟣',color:'#ff3e6c',icon:'<img src=\"images/logos/shein.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+   role:'快时尚第一·市占率>30%·半托管+全托管·年轻用户占 60%',
+   best:['现代穆斯林女装','运动户外','家居收纳','箱包','女鞋'],
+   hot:[
+    ['Modest 长袖连衣裙(大码)','90–185','SHEIN 高销量·穆斯林时尚','modest dress plus size'],
+    ['Black Abaya / Ironless Jubah','50–170','"免熨"是核心卖点','black abaya ironless'],
+    ['童装 Abaya(Eid 节日)','55–110','开斋节/斋月小众增量','kids abaya eid'],
+    ['瑜伽服/垫/普拉提圈','40–150','Vision2030 女性健身房带动','yoga set mat'],
+    ['露营椅/充气床垫/户外厨具','80–300','沙漠豪华露营·家庭聚会','camping chair mattress'],
+    ['电动滑板车配件(车筐/锁/灯/盔)','25–120','迪拜微出行合法·配件引流','scooter accessories'],
+    ['铁艺收纳架/置物柜','60–220','家居连续热销','metal storage rack'],
+    ['家居拖鞋(14周榜首)','30–90','女鞋类常青爆款','home slippers women'],
+    ['沙特国庆绿气球/派对帽/包装','20–80','9.23 国庆·绿色占比≥80%','saudi national day balloons']
+  ,
+    ['运动文胸/紧身裤','40–120','健身瑜伽','sports bra leggings'],
+    ['男士 Polo 衫','50–150','商务休闲','men polo shirt'],
+    ['泳装比基尼/罩衫','50–180','夏季度假','women swimsuit bikini'],
+    ['帆布手提袋','30–90','环保购物','canvas tote bag'],
+    ['发饰/发夹套装','15–50','搭配小件','hair clips set'],
+    ['男士运动短裤','40–120','运动休闲','men gym shorts'],
+    ['女士西装外套','120–350','通勤穿搭','women blazer jacket'],['男士运动套装','50–160','运动休闲','men tracksuit set'],['真丝睡裙/家居服','60–200','夏季舒适','silk slip dress'],['牛仔短裤/热裤','40–130','夏季必备','denim shorts women'],['宠物小衣服','30–90','养宠小众','pet clothes small']],
+   price:'高性价比·客单中低·半托管本地履约极速',
+   pit:'女装主图勿露肤；国庆品绿白金配色·禁印国旗；斋月 1月预热',
+   good:'快反供应链女装/运动/家居·轻小件·可半托管',
+   src:'163.com 国庆爆品, 10100 运动户外, accio Saudi Top, SHEIN 招商'},
+  {key:'namshi',name:'Namshi',flag:'🟠',color:'#e8541e',icon:'<img src=\"images/logos/namshi.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+   role:'海湾本土时尚电商（UAE/SA/QA/OM/BA/KW）· 青年时尚定位',
+   best:['女装连衣裙','女鞋','运动服','美妆','男装'],
+   hot:[
+    ['Trendyol 女装短裤','170–500','常促 -31%·10+ 近期售','trendyol shorts women'],
+    ['针织迷你裙','360','Trendyol 入驻爆款','knit mini skirt'],
+    ['高腰妈妈牛仔裤','675','Trendyol 牛仔爆款','high waist mom jeans'],
+    ['Namshi×Trendyol 闪亮腰带裙','190–1100','斋月/Eid·82% off','sequin belt dress'],
+    ['运动服(adidas/Nike/Squatwolf)','150–600','健身潮流','sportswear women'],
+    ['美妆(MAC/Charlotte Tilbury/KBeauty)','80–400','护肤彩妆刚需','mac makeup']
+  ,
+    ['女士踝靴/短靴','250–700','换季鞋履','women ankle boots'],
+    ['男士休闲裤/Chino','150–450','商务休闲','men chino pants'],
+    ['太阳镜/墨镜','100–400','防晒搭配','sunglasses women'],
+    ['香水/香氛套装','150–600','送礼刚需','perfume gift set'],
+    ['女士腰带','80–250','配饰','women belt'],
+    ['男士夹克/外套','200–600','换季必备','men jacket outerwear'],
+    ['运动文胸/紧身裤','150–500','运动时尚','sportswear set women'],
+    ['女士睡衣套装','120–350','家居舒适','women pajama set'],['男士运动鞋','250–700','运动潮流','men sneakers'],['长款连衣裙','200–600','通勤优雅','long dress women'],['真皮手提包','300–900','品质配饰','leather tote bag'],['针织开衫','180–500','换季层搭','knit cardigan women']],
+   price:'定位中端偏上·品牌溢价·折扣频繁',
+   pit:'重品牌与设计感；Trendyol 等品牌入驻；非普货铺量',
+   good:'有调性的时尚服饰/鞋履/美妆品牌卖家',
+   src:'namshi.com 前台, noon.com'},
+  {key:'trendyol',name:'Trendyol',flag:'⚪',color:'#f27a1a',icon:'<img src=\"images/logos/trendyol.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+   role:'土耳其巨头·2023进GCC·本地物流·高性价比时尚',
+   best:['男女装','配饰','牛仔','运动休闲'],
+   hot:[
+    ['男装 T恤/卫衣/短裤','60–250','彩色印花·年轻化','men tshirt printed'],
+    ['女装针织/衬衫/睡衣','80–300','性价比女装','women knit top'],
+    ['牛仔裤/Chino','150–400','高腰/直筒流行','jeans chino'],
+    ['配饰(手链/桶帽/腰带/钱包)','40–200','搭配引流小件','accessories set'],
+    ['泳装/运动休闲','80–300','夏季/健身','swimwear']
+  ,
+    ['女士半身裙','60–200','日常百搭','women skirt'],
+    ['男士卫衣/连帽衫','80–250','休闲运动','men hoodie sweatshirt'],
+    ['运动袜/船袜套装','20–70','搭配消耗','socks set men'],
+    ['女士开衫/针织衫','80–250','换季层搭','women cardigan knit'],
+    ['男士休闲衬衫','70–220','商务休闲','men casual shirt'],
+    ['运动文胸/紧身裤','60–180','健身穿搭','women sports bra set'],
+    ['帆布腰带','30–90','休闲配饰','canvas belt'],
+    ['女士短裤','50–150','夏季必备','women shorts'],['男士西装/套装','200–600','商务正装','men suit set'],['女士风衣/大衣','150–500','秋冬外套','women trench coat'],['雪纺连衣裙','80–300','日常甜美','chiffon dress women'],['男士皮带','60–200','配饰','men leather belt']],
+   price:'高性价比·客单中低·本地履约提速',
+   pit:'时尚红海·靠性价比与设计；需本地库存',
+   good:'快反服饰供应链·平价时尚',
+   src:'namshi(Trendyol 入驻), 10100'},
+  {key:'temu',name:'Temu 中东站',flag:'🔴',color:'#f60',icon:'<img src=\"images/logos/temu.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+   role:'超性价比新贵(2023起)·全托管·下载榜首(沙特/阿联酋)',
+   best:['普货轻小件','家居小物','饰品','3C配件'],
+   hot:[
+    ['手机壳/钢化膜/数据线','10–40','极致低价·海量SKU','phone case tempered glass'],
+    ['家居收纳小物','15–60','普货走量','storage organizer'],
+    ['饰品/发饰','10–50','冲动消费','jewelry hair accessories'],
+    ['小工具/配件','15–80','全托管铺货','mini tools gadgets']
+  ,
+    ['车载手机支架','10–40','驾驶刚需','car phone mount'],
+    ['便携式蓝牙音箱','15–60','户外/居家','portable bluetooth speaker'],
+    ['厨房沥水架/收纳','15–60','厨房收纳','kitchen drain rack'],
+    ['USB 数据线套装','8–30','消耗品','usb cable set'],
+    ['旅行洗漱包','10–40','出行收纳','travel toiletry bag'],
+    ['宠物玩具/零食','10–50','养宠消耗','pet toys treats'],
+    ['手机自拍杆/支架','10–40','拍摄刚需','selfie stick tripod'],
+    ['家用清洁刷套装','8–30','日常清洁','cleaning brush set'],['厨房神器/切菜器','8–40','家居实用','kitchen gadgets temu'],['无线车载手机支架','10–45','车载刚需','wireless car mount'],['LED 灯泡/夜灯','8–35','家居改造','led bulb night light'],['宠物自动喂食器','30–120','养宠智能','pet auto feeder']],
+   price:'极致低价·全托管·SKU 海量',
+   pit:'价格战极致·利润薄；全托管无定价权；适合铺货测款',
+   good:'供应链极致低价·轻小件铺货型卖家',
+   src:'haibeigoods 平台榜'},
+  {key:'ali',name:'AliExpress 中东站',flag:'🟡',color:'#ffb300',icon:'<img src=\"images/logos/ali.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+   role:'中国跨境头部·沙特第二大零售网站·高性价比大众',
+   best:['普货轻小件','3C','家居','服饰'],
+   hot:[
+    ['手机配件/充电','15–70','高性价比铺货','phone accessories charger'],
+    ['家居厨具小件','20–90','大众消费','kitchen gadgets'],
+    ['服饰配件','25–120','全品类覆盖','clothing accessories'],
+    ['汽车小配件','20–100','中东车主多','car accessories']
+  ,
+    ['智能手表/手环','30–150','3C配件','smart watch band'],
+    ['无线蓝牙耳机','20–100','音频配件','wireless earbuds bluetooth'],
+    ['LED 灯带/氛围灯','20–80','家居改造','led strip lights ali'],
+    ['车载吸尘器','30–120','汽车清洁','car vacuum cleaner'],
+    ['男士钱包/卡包','15–80','配饰','men wallet card holder'],
+    ['化妆镜/放大镜','15–60','美妆工具','makeup mirror led'],
+    ['手机镜头/三脚架','20–80','拍摄配件','phone lens tripod'],
+    ['园艺工具套装','20–100','家庭园艺','garden tools set'],['无线车载支架充','20–90','车载刚需','wireless car charger mount'],['智能手环/手环','30–150','3C配件','smart band fitness'],['厨房刀具套装','25–120','厨具','kitchen knife set'],['户外露营灯','20–100','露营装备','camping lantern']],
+   price:'高性价比·客单中低·中国供应链优势',
+   pit:'客单偏低·需差异化；适合普货轻小件',
+   good:'发挥中国供应链·普货轻小件',
+   src:'haibeigoods 平台榜'}
+,
+  {key:'carrefour',name:'Carrefour 中东',flag:'🟢',color:'#0078d2',icon:'<img src=\"images/logos/carrefour.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+   role:'家乐福中东线上平台（UAE/沙特/埃及/科威特/卡塔尔）· 线下门店强+线上增长快',
+   best:['食品杂货','家居日用','小家电','母婴快消','个护清洁'],
+   hot:[
+    ['家庭装洗衣液柔顺剂','30–80','家庭大包装复购高','laundry detergent liquid family pack'],
+    ['空气炸锅/电热水壶','80–250','小家电线上线下同价','air fryer electric kettle'],
+    ['婴儿纸尿裤 Pampers/Huggies','60–150','母婴刚需高频','baby diapers pampers huggies'],
+    ['大米/食用油/咖啡豆','20–100','食品杂货线上化','basmati rice cooking oil coffee beans'],
+    ['家居清洁用品套装','25–70','家庭刚需','home cleaning supplies set'],
+    ['微波炉/电饭煲','120–400','大家电线下体验线上买','microwave oven rice cooker']
+  ,
+    ['意大利面/酱料','15–50','食品杂货','pasta sauce set'],
+    ['洗发水/护发素套装','30–90','个护清洁','shampoo conditioner set'],
+    ['牙膏/牙刷家庭装','20–60','口腔护理','toothpaste toothbrush pack'],
+    ['沐浴液/香皂','15–50','个护消耗','body wash soap'],
+    ['洗洁精/厨房清洁','15–50','家居清洁','dish soap kitchen cleaner'],
+    ['垃圾袋/保鲜膜','10–40','家居消耗','trash bags cling film'],
+    ['坚果/干果零食','20–80','零食复购','nuts dried fruits snack'],
+    ['速溶咖啡/茶包','20–70','饮品复购','instant coffee tea bags'],['大容量空气炸锅','120–350','小家电','large air fryer'],['全自动咖啡机','200–800','咖啡刚需','coffee machine'],['婴儿辅食机','80–250','母婴','baby food maker'],['扫地机器人','300–1200','清洁家电','robot vacuum cleaner carrefour']],
+   price:'客单价中低 · 食品杂货复购强 · 线上线下同价',
+   pit:'食品类需清真/SFDA认证；价格战强；本地供应商有门店优势',
+   good:'有本地食品/快消供应链、能做日常刚需品的卖家',
+   src:'grabonuae UAE电商统计, stateglobe UAE市场'},
+  {key:'sharafdg',name:'Sharaf DG',flag:'🔵',color:'#1e3a8a',icon:'<img src=\"images/logos/sharafdg.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+   role:'阿联酋3C电子与家电零售巨头（月访问160万+）· 高客单标品',
+   best:['手机','笔记本','游戏主机','智能穿戴','家电','相机'],
+   hot:[
+    ['iPhone / Samsung Galaxy','1500–4000','高客单3C标品','iphone samsung galaxy'],
+    ['MacBook / 轻薄笔记本','2000–6000','办公学习刚需','macbook laptop'],
+    ['PlayStation 5 / Xbox Series','1500–2500','中东游戏消费高','playstation 5 xbox series'],
+    ['无线耳机/蓝牙音箱','100–500','3C配件','wireless earbuds bluetooth speaker'],
+    ['智能电视 55-65寸','800–3000','家庭娱乐升级','smart tv 55 inch'],
+    ['相机/无人机','1000–5000','专业与发烧友','camera drone']
+  ,
+    ['iPad/平板电脑','800–2500','学习办公','ipad tablet'],
+    ['智能手表/手环','150–600','穿戴设备','smart watch fitness sharafdg'],
+    ['机械键盘/鼠标','150–500','电竞办公','mechanical keyboard mouse'],
+    ['显示器 27寸','600–2000','办公娱乐','monitor 27 inch'],
+    ['路由器/Mesh WiFi','200–700','网络设备','wifi router mesh'],
+    ['移动电源/充电宝','50–200','3C配件','power bank portable charger'],
+    ['智能音箱','150–500','智能家居','smart speaker'],
+    ['电动牙刷','100–400','个护健康','electric toothbrush'],['游戏笔记本','2500–7000','高客单3C','gaming laptop'],['降噪蓝牙耳机','200–800','音频','noise cancelling earbuds'],['电动滑板车','400–1500','微出行','electric scooter'],['监控摄像头','150–600','安防','security camera']],
+   price:'高客单 · 品牌驱动 · 用户对信任/售后敏感',
+   pit:'需品牌授权/国代资质；价格高信任门槛高；售后要求严格',
+   good:'有品牌授权、能做高客单3C/家电的卖家',
+   src:'grabonuae UAE电商统计, stateglobe UAE市场'},
+  {key:'mumzworld',name:'Mumzworld',flag:'🟣',color:'#e91e63',icon:'<img src=\"images/logos/mumzworld.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+   role:'中东母婴垂直电商龙头（UAE起家，覆盖海湾）· 月访问25万+',
+   best:['婴儿护理','奶粉辅食','益智玩具','童装','孕妇用品'],
+   hot:[
+    ['婴儿推车/安全座椅','400–1500','高客单刚需','baby stroller car seat'],
+    ['婴儿纸尿裤','60–150','高频复购','baby diapers newborn'],
+    ['奶瓶/奶嘴套装','40–120','消耗品','baby bottles feeding set'],
+    ['益智早教玩具','50–250','教育需求','educational toys baby'],
+    ['婴儿服饰礼盒','80–200','送礼场景','newborn baby clothes gift set'],
+    ['孕妇护理套装','60–180','细分人群','maternity care set']
+  ,
+    ['婴儿湿巾/棉柔巾','20–60','高频消耗','baby wipes cotton pads'],
+    ['婴儿辅食/米粉','30–100','喂养刚需','baby food cereal'],
+    ['儿童三轮车/滑板车','150–500','户外玩具','kids scooter tricycle'],
+    ['婴儿浴盆/洗澡用品','50–150','日常护理','baby bath tub'],
+    ['产妇护理包','80–200','待产刚需','maternity hospital bag'],
+    ['儿童餐具套装','30–100','自主进食','kids feeding set'],
+    ['婴儿监视器','150–500','安全监护','baby monitor camera'],
+    ['孕妇装/哺乳衣','80–200','孕期穿搭','maternity clothes nursing'],['婴儿背带/腰凳','150–500','带娃刚需','baby carrier'],['宝宝餐椅','200–700','喂养','baby high chair'],['儿童绘本/早教','30–150','教育','kids books'],['孕妇枕','100–300','孕期舒适','pregnancy pillow']],
+   price:'中高客单 · 复购强 · 用户信任度要求高',
+   pit:'儿童用品认证严（SASO/EN71）；奶粉辅食需SFDA/清真；退货率高',
+   good:'有母婴供应链和合规能力、能做品牌信任感的卖家',
+   src:'grabonuae UAE电商统计, stateglobe UAE市场'},
+  {key:'6thstreet',name:'6th Street',flag:'🟠',color:'#ff6b35',icon:'<img src=\"images/logos/sixthstreet.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+   role:'海湾时尚鞋履电商（UAE/沙特/科威特等）· 平价时尚',
+   best:['女鞋','男鞋','运动鞋','包袋','配饰'],
+   hot:[
+    ['女士凉鞋/高跟鞋','100–350','全年刚需','women sandals heels'],
+    ['Nike/Adidas 运动鞋','200–600','品牌运动鞋','nike adidas sneakers'],
+    ['男士休闲皮鞋','150–400','办公社交','men casual leather shoes'],
+    ['时尚斜挎包','100–300','搭配品','women crossbody bag'],
+    ['拖鞋/人字拖','30–100','高频低价','flip flops slippers'],
+    ['童鞋','80–200','家庭消费','kids shoes']
+  ,
+    ['女士平底鞋/乐福鞋','150–450','通勤舒适','women flat shoes loafers'],
+    ['男士凉鞋/拖鞋','80–250','夏季高频','men sandals slippers'],
+    ['跑步鞋/训练鞋','250–700','运动专业','running shoes men'],
+    ['女士靴子/过膝靴','300–900','秋冬鞋履','women boots knee high'],
+    ['男士公文包/双肩包','200–600','商务出行','men briefcase backpack'],
+    ['女士围巾/披肩','80–250','配饰','women scarf shawl'],
+    ['太阳镜/墨镜','100–350','防晒搭配','sunglasses men women'],
+    ['钱包/卡包','80–250','配饰','wallet card holder'],['男士运动鞋','250–700','品牌运动','men running sneakers'],['女士单肩包','150–500','搭配','women shoulder bag'],['童鞋凉鞋','80–250','家庭消费','kids sandals'],['女士针织衫','150–450','换季','women knit top']],
+   price:'中端时尚 · 鞋履为主 · 折扣敏感',
+   pit:'时尚红海；重图片与品牌感；尺码需本地化；退货率高',
+   good:'鞋履箱包供应链强、能做品牌感与快速上新的卖家',
+   src:'stateglobe UAE市场, 6thstreet.com'},
+  {key:'fordeal',name:'Fordeal',flag:'🔵',color:'#0056ff',icon:'<img src=\"images/logos/fordeal.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+   role:'中东跨境综合平台（总部广州，覆盖沙特/阿联酋/科威特/卡塔尔/阿曼/巴林）· 中国卖家友好',
+   best:['女装时尚','家居日用','美妆个护','3C配件','母婴玩具'],
+   hot:[
+    ['女士连衣裙/长裙','60–200','中东女性日常穿搭刚需','women dress long'],
+    ['刺绣 Abaya / 长袍','80–250','斋月/Eid 高频·文化适配','embroidered abaya'],
+    ['家居收纳/整理箱','25–90','家庭收纳高频','storage organizer box'],
+    ['手机壳/钢化膜/数据线','10–40','3C配件铺货','phone case tempered glass'],
+    ['发饰/头饰套装','15–50','冲动消费小件','hair accessories set'],
+    ['男士 Thobe / 传统长袍','70–200','本地文化刚需','men thobe']
+  ,
+    ['女士休闲裤/阔腿裤','50–180','日常舒适穿搭','women wide leg pants'],
+    ['厨房小工具/削皮器','10–40','家居实用小件','kitchen gadgets'],
+    ['旅行收纳袋套装','25–80','出行刚需','travel packing cubes'],
+    ['儿童益智玩具','30–120','母婴玩具','educational toys kids'],
+    ['护肤套装/面霜','40–150','美妆个护','skincare set cream'],
+    ['女士大码女装','60–200','中东市场需求大','plus size women dress'],
+    ['拖鞋/人字拖','15–50','高频低价','flip flops slippers'],
+    ['汽车手机支架','15–50','车载刚需','car phone holder'],['男士运动鞋','60–250','运动','men sneakers fordeal'],['女士针织开衫','60–200','换季','women knit cardigan'],['儿童书包','40–150','上学','kids school bag'],['厨房收纳架','25–90','家居','kitchen storage rack']],
+   price:'中低客单 · 性价比导向 · 中国供应链优势',
+   pit:'价格战强；需快速上新；物流时效影响转化；部分国家清关需认证',
+   good:'有中国供应链、能做快反时尚/家居/3C配件的卖家',
+   src:'Fordeal 招商资料, 行业调研'},
+  {key:'ounass',name:'Ounass',flag:'⚫',color:'#1a1a1a',icon:'<img src=\"images/logos/ounass.png\" width=\"18\" height=\"18\" style=\"border-radius:4px;vertical-align:middle;margin-right:5px;flex-shrink:0;background:#fff;object-fit:contain;display:inline-block\" alt=\"\">',
+   role:'阿联酋高端奢侈品时尚电商（覆盖海湾六国）· 高端设计师品牌',
+   best:['奢侈品女装','设计师包袋','高端鞋履','珠宝配饰','高级美妆'],
+   hot:[
+    ['设计师品牌连衣裙','800–3000','高端女装核心','designer dress women'],
+    ['奢侈品手提包','1500–8000','高客单标品','luxury handbag'],
+    ['设计师高跟鞋','700–2500','鞋履高利润','designer heels women'],
+    ['高端太阳镜','500–2000','配饰轻奢','luxury sunglasses'],
+    ['珠宝首饰/项链耳环','600–3000','送礼高客单','designer jewelry'],
+    ['高级香水/香氛套装','400–1500','美妆高端线','luxury perfume gift set']
+  ,
+    ['男士设计师皮鞋','800–3000','商务高端','designer men shoes'],
+    ['羊绒围巾/披肩','600–2500','秋冬轻奢','cashmere scarf'],
+    ['设计师腰带','400–1500','搭配品','designer belt women'],
+    ['高端护肤精华','500–2000','美妆奢护','luxury skincare serum'],
+    ['晚礼服/派对裙','1000–5000','节庆社交','evening dress party'],
+    ['女士设计师西装','1200–4000','通勤轻奢','designer blazer women'],
+    ['限量版运动鞋','1500–5000','潮流收藏','limited sneakers'],
+    ['高级化妆包/皮具','400–1500','轻奢配饰','luxury leather pouch'],['长款设计师连衣裙','1000–4000','高端女装','designer long dress'],['奢侈品围巾','500–2000','轻奢配饰','luxury scarf'],['高端腕表','1500–6000','腕表','luxury watch'],['设计师手拿包','800–3000','晚宴','designer clutch bag']],
+   price:'高客单 · 品牌溢价 · 利润空间大',
+   pit:'需品牌授权/正品证明；门槛高；受众窄；对图片/服务要求极高',
+   good:'有奢侈品/设计师品牌授权、能做高端时尚与服务的卖家',
+   src:'ounass.com, stateglobe UAE市场'}
+
+];
+
+/* 各平台定价费率模板（经验估算，可按实际账单调整）
+   每个平台支持多种发货/履约模式：mode.factor 为佣金系数，最终佣金 = 品类佣金 × mode.factor */
+const PLATFORM_FEES={
+  noon:{
+    name:'Noon',defaultComm:0.10,note:'Noon 默认按品类佣金 × 发货模式系数；FBN 流量权重最高。',
+    modes:[
+      {key:'fbn',name:'FBN（入官方仓）',factor:0.70,logiName:'FBN费',fbnBase:4,fbnPerKg:3,fbnSize:5,firstMile:18,isOfficial:true,tip:'佣金 7 折，流量权重最高'},
+      {key:'fbp',name:'FBP（卖家自发货）',factor:1.00,logiName:'自发货物流费',fbnBase:0,fbnPerKg:0,fbnSize:0,firstMile:22,isOfficial:false,tip:'佣金不打折，物流自理'},
+      {key:'crossdock',name:'Cross-dock（越库直发）',factor:0.85,logiName:'越库操作费',fbnBase:2,fbnPerKg:2.5,fbnSize:0,firstMile:18,isOfficial:false,tip:'中转站集货直发，佣金约 8.5 折'},
+      {key:'globalstore',name:'Noon Global Store（全球购）',factor:1.00,logiName:'跨境直邮物流费',fbnBase:0,fbnPerKg:0,fbnSize:0,firstMile:25,isOfficial:false,tip:'Noon 全球购（跨境直邮），佣金不打折，物流由卖家或平台跨境直邮'}
+    ]
+  },
+  amazon:{
+    name:'Amazon.ae/sa',defaultComm:0.12,note:'Amazon 佣金普遍比 noon 高 1-3%，FBA 费用高于 FBN；SAR≈AED。',
+    modes:[
+      {key:'fba',name:'FBA（入官方仓）',factor:1.00,logiName:'FBA费',fbnBase:6,fbnPerKg:4,fbnSize:6,firstMile:18,isOfficial:true,tip:'标准 FBA 佣金+配送费'},
+      {key:'mfn',name:'MFN（卖家自发货）',factor:1.00,logiName:'自发货物流费',fbnBase:0,fbnPerKg:0,fbnSize:0,firstMile:25,isOfficial:false,tip:'佣金同 FBA，物流自理'}
+    ]
+  },
+  shein:{
+    name:'SHEIN 中东站',defaultComm:0.13,note:'SHEIN 半托管佣金+物流由平台核算；全托管卖家无定价权，仅供参考。',
+    modes:[
+      {key:'halftb',name:'半托管（卖家定价·平台物流）',factor:1.00,logiName:'平台物流费',fbnBase:5,fbnPerKg:3.5,fbnSize:5,firstMile:15,isOfficial:true,tip:'卖家定价，平台负责尾程物流'},
+      {key:'fulltb',name:'全托管（平台定价）',factor:1.00,logiName:'平台核价物流',fbnBase:0,fbnPerKg:0,fbnSize:0,firstMile:0,isOfficial:true,tip:'平台核价，此表仅供参考'},
+      {key:'self',name:'自发货',factor:0.90,logiName:'自发货物流费',fbnBase:0,fbnPerKg:0,fbnSize:0,firstMile:18,isOfficial:false,tip:'卖家自找物流，佣金略低'}
+    ]
+  },
+  namshi:{
+    name:'Namshi',defaultComm:0.18,note:'Namshi 以时尚为主，佣金与物流费偏高；适合有调性的品牌/设计款。',
+    modes:[
+      {key:'platform',name:'平台仓（官方物流）',factor:1.00,logiName:'平台物流费',fbnBase:5,fbnPerKg:4,fbnSize:6,firstMile:20,isOfficial:true,tip:'入平台仓，流量与转化更稳定'},
+      {key:'self',name:'卖家自发货',factor:1.00,logiName:'自发货物流费',fbnBase:0,fbnPerKg:0,fbnSize:0,firstMile:25,isOfficial:false,tip:'佣金同平台仓，物流自理'}
+    ]
+  },
+  trendyol:{
+    name:'Trendyol',defaultComm:0.15,note:'Trendyol 主打性价比时尚，佣金中等，需本地库存。',
+    modes:[
+      {key:'local',name:'本地仓（官方物流）',factor:1.00,logiName:'平台物流费',fbnBase:4.5,fbnPerKg:3.5,fbnSize:5,firstMile:18,isOfficial:true,tip:'本地仓发货，时效最快'},
+      {key:'cross',name:'跨境直发',factor:1.00,logiName:'跨境直发物流费',fbnBase:2,fbnPerKg:3,fbnSize:3,firstMile:20,isOfficial:false,tip:'跨境直发，时效较慢'}
+    ]
+  },
+  temu:{
+    name:'Temu 中东站',defaultComm:0.08,note:'Temu 全托管核价后利润很薄；此表按估算服务费+物流反推，实际以平台核价为准。',
+    modes:[
+      {key:'fulltb',name:'全托管（平台定价）',factor:1.00,logiName:'平台核价物流',fbnBase:0,fbnPerKg:0,fbnSize:0,firstMile:0,isOfficial:true,tip:'平台核价，卖家无定价权，仅供参考'},
+      {key:'halftb',name:'半托管（卖家定价·平台物流）',factor:1.00,logiName:'平台物流费',fbnBase:3,fbnPerKg:2.5,fbnSize:4,firstMile:12,isOfficial:true,tip:'卖家定价，平台尾程'}
+    ]
+  },
+  ali:{
+    name:'AliExpress 中东站',defaultComm:0.06,note:'AliExpress 佣金较低，但客单也偏低；可自发货降低物流成本。',
+    modes:[
+      {key:'cainiao',name:'无忧物流标准',factor:1.00,logiName:'无忧物流费',fbnBase:4,fbnPerKg:3,fbnSize:5,firstMile:16,isOfficial:true,tip:'菜鸟无忧物流标准线'},
+      {key:'oversea',name:'海外仓',factor:1.00,logiName:'海外仓配送费',fbnBase:5,fbnPerKg:3.5,fbnSize:5,firstMile:8,isOfficial:true,tip:'本地海外仓发货'},
+      {key:'self',name:'自发货',factor:0.90,logiName:'自发货物流费',fbnBase:0,fbnPerKg:0,fbnSize:0,firstMile:20,isOfficial:false,tip:'自找物流，佣金略低'}
+    ]
+  },
+  fordeal:{
+    name:'Fordeal',defaultComm:0.12,note:'Fordeal 中国卖家友好，佣金约 10-15%，物流多为平台集货或卖家自发货。',
+    modes:[
+      {key:'platform',name:'平台物流（集货直发）',factor:1.00,logiName:'平台物流费',fbnBase:2,fbnPerKg:2.5,fbnSize:0,firstMile:18,isOfficial:true,tip:'平台统一集货直发，时效较稳'},
+      {key:'self',name:'卖家自发货',factor:1.00,logiName:'自发货物流费',fbnBase:0,fbnPerKg:0,fbnSize:0,firstMile:22,isOfficial:false,tip:'卖家自行安排跨境物流'}
+    ]
+  },
+  ounass:{
+    name:'Ounass',defaultComm:0.20,note:'Ounass 定位高端奢侈品，佣金高、门槛高，需品牌授权与正品证明。',
+    modes:[
+      {key:'platform',name:'平台官方物流/仓',factor:1.00,logiName:'平台物流费',fbnBase:8,fbnPerKg:5,fbnSize:8,firstMile:25,isOfficial:true,tip:'官方仓发货，保障高端服务体验'},
+      {key:'self',name:'品牌直发/自发货',factor:1.00,logiName:'品牌直发物流费',fbnBase:0,fbnPerKg:0,fbnSize:0,firstMile:30,isOfficial:false,tip:'品牌方或授权经销商直接发货'}
+    ]
+  }
+};
+
+const IMG_MAP={"noon|air fryer arabic menu":"images/real/noon_0.jpg","noon|men thobe":"images/real/noon_1.jpg","noon|embroidered abaya":"images/real/noon_2.jpg","noon|oud perfume mens":"images/real/noon_3.jpg","noon|arabic coffee dallah":"images/real/noon_4.jpg","noon|eid lantern led":"images/real/noon_5.jpg","noon|saudi national day gift box":"images/real/noon_6.jpg","noon|phone charger cable set":"images/real/noon_7.jpg","noon|dates gift box":"images/real/noon_8.jpg","noon|car phone holder charger":"images/real/noon_9.jpg","noon|men shemagh ghutra":"images/real/noon_10.jpg","noon|usb c hub adapter":"images/real/noon_11.jpg","noon|bluetooth keyboard":"images/real/noon_12.jpg","noon|led desk lamp":"images/real/noon_13.jpg","noon|travel packing cubes":"images/real/noon_14.jpg","amazon|echo dot arabic":"images/real/amazon_official_0.jpg","amazon|kindle paperwhite":"images/real/amazon_official_1.jpg","amazon|ps5 controller":"images/real/amazon_official_2.jpg","amazon|travel organizer 6 set":"images/real/amazon_official_3.jpg","amazon|air fryer robot vacuum":"images/real/amazon_official_4.jpg","amazon|argan oil serum":"images/real/amazon_official_5.jpg","amazon|cat scratching post":"images/real/amazon_official_6.jpg","noon|wireless earbuds":"images/real/noon_15.jpg","noon|smart watch":"images/real/noon_16.jpg","noon|robot vacuum cleaner":"images/real/noon_17.jpg","noon|led strip lights":"images/real/noon_18.jpg","noon|gaming chair":"images/real/noon_19.jpg","noon|portable blender":"images/real/noon_20.jpg","noon|electric toothbrush":"images/real/noon_21.jpg","noon|insulated water bottle":"images/real/noon_22.jpg","noon|yoga mat":"images/real/noon_23.jpg","noon|bluetooth speaker":"images/real/noon_24.jpg"};
+const URL_MAP={"amazon|echo dot arabic":"https://www.amazon.ae/dp/B0DYCCYPJ9","amazon|kindle paperwhite":"https://www.amazon.ae/dp/B0CFPL6CFY","amazon|ps5 controller":"https://www.amazon.ae/dp/B08HKCM222","amazon|travel organizer 6 set":"https://www.amazon.ae/dp/B0BC9QZJXQ","amazon|air fryer robot vacuum":"https://www.amazon.ae/dp/B0DZCW1SG5","amazon|argan oil serum":"https://www.amazon.ae/dp/B0FXMQ2CZT","amazon|cat scratching post":"https://www.amazon.ae/dp/B0F2F2YWNF","shein|yoga set mat":"https://au.shein.com/SHEIN-Teen-Girls-Black-High-Stretch-Fitted-Slit-Hem-Solid-Color-Leggings-Yoga-Pants-Sports-Tights-p-48805158.html","shein|modest dress plus size":"https://sg.shein.com/Plus-Size-Women%27s-Random-Print-Long-Sleeve-Arabian-Modest-Dress-p-40982168.html","shein|black abaya ironless":"https://www.shein.com/hotsale/World-SA-Modest-Plus-Size-Abaya-sc-0031675552.html","shein|home slippers women":"https://www.shein.com/category/SHEIN-SXY-Shoes-sc-008372119.html","trendyol|women dress":"https://www.trendyol.com/en/trendyol-collection/ecru-st-plain-regular-mini-woven-50-cotton-50-polyester-dress-p-858159295","trendyol|men tshirt printed":"https://www.trendyol.com/en/moonbull/men-s-oversize-signature-printed-t-shirt-p-788991107","temu|storage organizer":"https://www.temu.com/ae/1pc-pull-out-organizer-single-layer-slide-out-drawer-storage-holder-multifunctional-large-capacity-storage-organizer-for-kitchen-and-bathroom-home-organizers-and-storage-home-accessories-g-601099574320655.html","temu|phone case tempered glass":"https://www.temu.com/ae/gc/electronics/communications/telephony/mobile-phone-accessories/mobile-phone-cases-2353.html","carrefour|air fryer electric kettle":"https://www.carrefouruae.com/mafuae/en/fryer/philips-air-fryer-hd9252/p/1763048","carrefour|baby diapers pampers huggies":"https://www.carrefouruae.com/mafuae/en/baby-diapers/pampers-pc-taped-cp-s1-22s/p/2209591","carrefour|baby formula milk":"https://www.carrefouruae.com/mafuae/en/baby-formula-1-6-years-/aptamil-comfort-3-400g/p/2236416","carrefour|laundry detergent liquid family pack":"https://www.carrefouruae.com/mafuae/en/root-maf-category/nonfood-navigation-category/cleaning-household/laundry-detergents/detergents/top-load/crf-det-powder-top-load-reg-110g/p/1351523","6thstreet|women sandals heels":"https://en-bh.6thstreet.com/buy-call-it-spring-shoes-melina-braided-flat-sandals-30melina-001-black.html","sharafdg|iphone samsung galaxy":"https://uae.sharafdg.com/samsung-smartphones/","noon|air fryer arabic menu":"https://www.noon.com/uae-en/7-4l-air-fryer-with-1-c-precise-temperature-control-menu-iq-and-12-preset-programs/Z2F8897F5FDF6E0C9DA19Z/p/?o=b1e328fdaf762b4b","noon|men thobe":"https://www.noon.com/uae-en/heritage-maroon-emirati-thobe-dishdasha-kaftan-with-tassel-accent-and-zip-closure/Z392B25F194032D91996DZ/p/?o=z392b25f194032d91996dz-9","noon|embroidered abaya":"https://www.noon.com/uae-en/black-gold-thread-embroidered-abaya-classic-luxury-modest-gown/Z84E689DF66F9B4198646Z/p/?o=ea2d13ab35163d0d","noon|oud perfume mens":"https://www.noon.com/uae-en/sense-of-oud-edp-100ml/Z3AF416E908A30B16CA61Z/p/?o=z3af416e908a30b16ca61z-1","noon|arabic coffee dallah":"https://www.noon.com/uae-en/gulf-dallah-arabic-coffee-maker-1000-ml/Z07B176BFD91CC47DCC74Z/p/?o=z07b176bfd91cc47dcc74z-1","noon|eid lantern led":"https://www.noon.com/uae-en/eid-mubarak-led-lights-ramadan-decorations-for-home-pony-lanterns-oil-lamp-ornament-ramadan-kareem-gifts-eid-al-adha-decor/ZA13CEF4DCFED175074ABZ/p/?o=za13cef4dcfed175074abz-1","noon|saudi national day gift box":"https://www.noon.com/uae-en/beautiful-decorative-item-hanging-banner-uae-national-day-50-cm-multi-purpose-use-pack-of-1-unit/Z86380D1C0019682EA3C8Z/p/?o=z86380d1c0019682ea3c8z-1","noon|phone charger cable set":"https://www.noon.com/uae-en/2m-usb-c-to-usb-c-cable-60w-fast-charger-cord-type-c-to-type-c-for-phones-iphone-16-15-pro-max-plus-samsung-s-25-24-23-plus-ultra-huawei-xiaomi-tablets-ipad-air-mini-notebooks-macbook/ZBDEF962DDF5430E11D09Z/p/?o=c7e1f16de0bdabfe","noon|dates gift box":"https://www.noon.com/uae-en/cassandra-large-gift-set-collection-premium-filled-dates/Z5018F19747368530532EZ/p/?o=c33f4fceba4c172f","noon|men shemagh ghutra":"https://www.noon.com/uae-en/derby-super-deluxe-red-white-shemagh-ghutra-for-men-100-cotton/ZDB08DB99600645D97A70Z/p/?o=bb5d2ec9e7190f6a","noon|usb c hub adapter":"https://www.noon.com/uae-en/usb-c-hub-with-100w-pd-charging-type-c-to-hdmi-4k-at-30hz-adapter-usb-hub-30-5gbps-data-transfer-ports-compatible-for-macbook-pro-air-m3-m2-m1-ipad-pro-m4-iphone-16-15-pro-pro-max-lenovo-dell-hp-macbook-neo-grey/N53417515A/p/?o=da3a492adb3c392b","noon|bluetooth keyboard":"https://www.noon.com/uae-en/rock-pow-75-77-key-wireless-gaming-keyboard-bluetooth-computer-keyboard-with-media-knob-rgb-backlit-tri-mode-bt-usb-c-2-4ghz-4000mah-quiet-membrane-keyboards-for-pc-tablet-xbox-ps4-ps5-creamy-lavender-blue/ZB9C0F9B6B29A7864BDC1Z/p/?o=c804d0441f3f6a6b","noon|led desk lamp":"https://www.noon.com/uae-en/led-clip-desk-lamp-reading-light-study-lamp-eye-care-protection-with-10-dimmable-brightness-3-light-modes-usb-powered-flexible-gooseneck-clamp-for-bed-headboard-table-office-lights/ZB7F79505675269470E4CZ/p/?o=zb7f79505675269470e4cz-1","noon|travel packing cubes":"https://www.noon.com/uae-en/7-pack-packing-cubes-value-set-for-travel-luggage-organiser-bag-compression-pouches-clothes-suitcase-packing-organizers-set-with-toiletry-bag-pink/Z6594EEB3326499B3A78DZ/p/?o=z6594eeb3326499b3a78dz-1","noon|wireless earbuds":"https://www.noon.com/uae-en/freebuds-se-2-in-ear-earphones-true-wireless-earbuds-40-hour-battery-life-ip54-water-and-dust-proof-compact-and-comfortable-graphite-black/N70075990V/p/","noon|smart watch":"https://www.noon.com/uae-en/watch-fit-5-smart-watch-43mm-fullview-display-ios-android-upto-10-days-battery-life-sleep-health-monitor-heart-rate-monitor-spo2-gps-mini-work-out-black/N70368019V/p/","noon|robot vacuum cleaner":"https://www.noon.com/uae-en/q7-tf-robot-vacuum-and-mop-upgraded-from-q5-max-7-weeks-self-emptying-10000pa-suction-dual-anti-tangle-system-for-pet-hair-carpet-precisense-lidar-navigation-app-control-black-60-w-q7-tf-black/N70182939V/p/","noon|led strip lights":"https://www.noon.com/uae-en/5-meters-rgb-led-neon-strip-light-5-lighting-modes-usb-powered-flexible-rope-light-with-remote-app-control-music-sync-diy-shape-neon-lighting-for-bedroom-gaming-room-tv-party-decor/ZF49474270C78FDB25714Z/p/","noon|gaming chair":"https://www.noon.com/uae-en/office-chair-cover-set-green/N48590439A/p/","noon|portable blender":"https://www.noon.com/uae-en/portable-blender-for-protein-shake-smoothie-frozen-fruit-ice-tritan-plastic-bpa-free-with-handled-sip-lid-usb-c-rechargeable-2200mah-battery-dishwasher-safe-parts-475-ml-100-w-nb-pb475b-navy-blue/N70034958V/p/","noon|electric toothbrush":"https://www.noon.com/uae-en/vitality-cross-action-rechargeable-electric-toothbrush-1-count-black/N40729575A/p/","noon|insulated water bottle":"https://www.noon.com/uae-en/freesip-insulated-stainless-steel-water-bottle-with-straw-for-sports-and-travel-bpa-free-24-ounce-shy-marshmallow/ZC22331A9316E1C124148Z/p/","noon|yoga mat":"https://www.noon.com/uae-en/yoga-mat-anti-slip-exercise-mat-with-carrying-bag-fitness-mat-for-pilates-183cm-61cm-6mm-thickness-for-woman-man-beginners-purple-pink/Z4DDA125062C7766547DDZ/p/","noon|bluetooth speaker":"https://www.noon.com/uae-en/select-4-go-ultra-portable-bluetooth-speaker-by-anker-20h-playtime-ip67-waterproof-and-dustproof-floatable-customisable-pro-eq-wireless-stereo-pairing-ideal-for-home-outdoors-hiking-black/N70118933V/p/"};
+const DATA_MAP={"noon|air fryer arabic menu": {"price": "109", "rating": "3.7", "reviews": "3"}, "noon|men thobe": {"price": "178", "rating": "4.9", "reviews": "6"}, "noon|embroidered abaya": {"price": "93"}, "noon|oud perfume mens": {"price": "43.95", "rating": "4.3", "reviews": "4922"}, "noon|arabic coffee dallah": {"price": "199", "rating": "4.9", "reviews": "9"}, "noon|eid lantern led": {"price": "36.6"}, "noon|saudi national day gift box": {"price": "46", "rating": "5", "reviews": "2"}, "noon|phone charger cable set": {"price": "269", "rating": "4.6", "reviews": "67"}, "noon|dates gift box": {"price": "26.85", "rating": "4.9", "reviews": "18"}, "noon|car phone holder charger": {"price": "49.95", "rating": "4.5", "reviews": "966"}, "noon|men shemagh ghutra": {"price": "85"}, "noon|usb c hub adapter": {"price": "89", "rating": "4.5", "reviews": "2141"}, "noon|bluetooth keyboard": {"price": "160", "rating": "4.8", "reviews": "50"}, "noon|led desk lamp": {"price": "28", "rating": "4.1", "reviews": "8"}, "noon|travel packing cubes": {"price": "60", "rating": "4.4", "reviews": "63"}, "noon|wireless earbuds": {"price": "69.55", "rating": "4.4", "reviews": "57914"}, "noon|smart watch": {"price": "459", "rating": "4.5", "reviews": "95"}, "noon|robot vacuum cleaner": {"price": "498.99", "rating": "4.5", "reviews": "160"}, "noon|led strip lights": {"price": "45", "rating": "4.1", "reviews": "250"}, "noon|gaming chair": {"price": "79.05"}, "noon|portable blender": {"price": "163", "rating": "4.5", "reviews": "242"}, "noon|electric toothbrush": {"price": "104.85", "rating": "4.4", "reviews": "974"}, "noon|insulated water bottle": {"price": "145.5", "rating": "4.7", "reviews": "7"}, "noon|yoga mat": {"price": "59.95", "rating": "4.5", "reviews": "80"}, "noon|bluetooth speaker": {"price": "79", "rating": "4.7", "reviews": "778"}};
+
+/* 各平台真实搜索链接（点击即看真实商品图/价格/链接，永不失效） */
+function platSearchUrl(key,kw){
+  kw=encodeURIComponent(kw);
+  const u={
+    noon:`https://www.noon.com/uae-en/search/?q=${kw}`,      // Noon 真实搜索页就是 /search/?q= 格式
+    amazon:`https://www.amazon.ae/s?k=${kw}`,
+    shein:`https://www.shein.com/ae/search?q=${kw}`,
+    namshi:`https://www.namshi.com/ae-en/search/?q=${kw}`,         // Namshi 搜索页用 /search/?q= 格式
+    trendyol:`https://www.trendyol.com/sr?q=${kw}`,
+    temu:`https://www.temu.com/search_result.html?search_key=${kw}`,
+    ali:`https://www.aliexpress.com/wholesale?SearchText=${kw}`,
+    carrefour:`https://www.carrefouruae.com/mafuae/en/search?q=${kw}`,
+    sharafdg:`https://uae.sharafdg.com/?s=${kw}&post_type=product`,
+    mumzworld:`https://www.mumzworld.com/catalogsearch/result/?q=${kw}`,
+    '6thstreet':`https://www.6thstreet.com/en-ae/search?q=${kw}`,
+    fordeal:`https://www.fordeal.com/search?keyword=${kw}`,
+    ounass:`https://www.ounass.ae/search/?q=${kw}`
+  };
+  return u[key]||'#';
+}
+/* 商品语义 -> emoji 图标（缩略图锚点，点击跳真实商品页） */
+function iconFor(n){
+  n=(n||'').toLowerCase();
+  const m=[['cat','🐱'],['狗','🐶'],['abaya','🧕'],['thobe','👔'],['裙','👗'],['衣','👕'],['裤','👖'],['鞋','👟'],['air fry','🍳'],['炸锅','🍳'],['coffee','☕'],['咖啡','☕'],['perfume','🌸'],['香水','🌸'],['lantern','💡'],['灯','💡'],['gift','🎁'],['礼品','🎁'],['echo','🔊'],['kindle','📚'],['playstation','🎮'],['controller','🎮'],['耳机','🎧'],['earbuds','🎧'],['收纳','📦'],['organizer','📦'],['rack','🗄️'],['架','🗄️'],['camp','⛺'],['露营','⛺'],['瑜伽','🧘'],['yoga','🧘'],['scooter','🛴'],['手机','📱'],['phone','📱'],['充电','🔌'],['charger','🔌'],['饰品','💍'],['jewel','💍'],['工具','🔧'],['tool','🔧'],['汽车','🚗'],['car','🚗'],['护肤','🧴'],['serum','🧴'],['美妆','💄'],['makeup','💄'],['泳','🩱'],['swim','🩱'],['玩具','🧸'],['toy','🧸'],['balloon','🎈'],['气球','🎈'],['针梳','🪮'],['梳','🪮'],['砂盆','🪣'],['窝','🛏️'],['床','🛏️'],['包','🎒'],['bag','🎒'],['指甲','✂️'],['剪','✂️'],['饮水','💧'],['喂','🍽️'],['宠物','🐾'],['pet','🐾']];
+  for(const k of m){ if(n.indexOf(k[0])>=0) return k[1]; }
+  return '🛍️';
+}
+
+/* 🏆 宠物用品具体商品（可直接上架）数据 + 渲染（带 1688/速卖通货源链接） */
+const PET=[
+ ['剑麻立式猫抓柱 40-50cm','剑麻猫抓柱 猫爬架 小型','55–95','0.8–1.5','天然剑麻护家具、可降解；公寓养猫刚需；无认证'],
+ ['凉感猫窝 / 冰丝猫床','凉感猫窝 冰丝宠物窝 夏季','60–110','0.5–1.0','中东夏季 50℃，凉感款刚需；无认证'],
+ ['猫薄荷玩具球 + 逗猫棒套装','猫玩具 猫薄荷 逗猫棒','25–55','&lt;0.2','极轻、高复购、冲动消费；无认证'],
+ ['静音循环宠物饮水机','宠物饮水机 静音 循环水','95–180','1.0–2.0','猫爱流动水；带电需 CE 声明'],
+ ['定时 / APP 自动喂食器','自动喂食器 宠物 定时','110–200','1.5–2.5','出差 / 斋月禁食期神器；带电需 CE 声明'],
+ ['去浮毛宠物针梳','宠物针梳 去浮毛 猫咪','35–65','&lt;0.3','换毛季高频复购；无认证'],
+ ['半封闭防溅猫砂盆','猫砂盆 半封闭 防臭','70–140','1.0–2.0','养猫标配；猫砂消耗品另计；无认证'],
+ ['猫咪指甲剪护理套装','猫咪指甲剪 宠物护理','30–55','&lt;0.3','新手养猫必买；无认证'],
+ ['透气双肩猫包','猫包 透气 双肩 宠物','60–120','0.5–1.0','带猫出行 / 看兽医；无认证'],
+ ['猫咪小码服饰（小众测款）','宠物衣服 猫咪 小码','40–90','&lt;0.3','服饰偏好小众，先小批量测；无认证']
+];
+function renderPet(){
+  const b=$('petBody'); if(!b)return;
+  b.innerHTML=PET.map((r,idx)=>`<tr>
+    <td style="white-space:normal">
+      <div style="display:flex;align-items:center;gap:9px">
+        <img src="images/real/pet_${idx}.jpg" width="40" height="40" style="border-radius:9px;object-fit:cover;flex:none" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <span style="display:none;width:40px;height:40px;border-radius:9px;background:#21a67a1a;align-items:center;justify-content:center;font-size:20px;flex:none">🐱</span>
+        <div>
+          <b>${r[0]}</b><br>
+          <span class="small"><a href="https://s.1688.com/b2b/offerlist.htm?keywords=${encodeURIComponent(r[1])}" target="_blank" rel="noopener" style="color:#21a67a">🔗 1688 搜货源</a> · <a href="https://www.aliexpress.com/wholesale?SearchText=${encodeURIComponent(r[1])}" target="_blank" rel="noopener" style="color:#21a67a">速卖通</a></span>
+        </div>
+      </div>
+    </td>
+    <td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td style="white-space:normal">${r[4]}</td>
+  </tr>`).join('');
+}
+
+/* 候选品类 -> 适配平台映射（基于 PLATFORMS.best 关键词归一化） */
+const CATP_MAP={
+  '手机配件':['amazon','noon','temu','ali','sharafdg'],
+  '电子电器':['amazon','noon','temu','ali','sharafdg'],
+  '电脑办公':['amazon','noon','temu','ali','sharafdg'],
+  '美妆个护':['noon','amazon','namshi','carrefour'],
+  '时尚服饰':['noon','shein','namshi','trendyol','6thstreet'],
+  '鞋靴箱包':['noon','shein','namshi','trendyol','6thstreet','amazon'],
+  '家居家纺':['noon','amazon','shein','temu','ali','carrefour'],
+  '厨房用品':['noon','amazon','carrefour'],
+  '母婴玩具':['amazon','shein','mumzworld','carrefour'],
+  '运动户外':['amazon','shein','namshi','trendyol','6thstreet'],
+  '汽车用品':['ali','temu'],
+  '食品保健':['carrefour'],
+  '宠物用品':['amazon'],
+  '办公文具':['temu','ali','sharafdg'],
+  '珠宝手表':['noon','namshi'],
+  '其他':['noon','amazon','temu','ali','carrefour']
+};
+function getFitPlatforms(cat){
+  const ks=CATP_MAP[cat]||CATP_MAP['其他'];
+  return PLATFORMS.filter(p=>ks.includes(p.key));
+}
+function platTag(key){
+  const p=PLATFORMS.find(x=>x.key===key);
+  if(!p)return '';
+  const nm=p.name.replace(' 中东站','');
+  return `<span style="display:inline-block;margin:1px 3px 1px 0;padding:1px 7px;border-radius:10px;font-size:11px;color:#fff;background:${p.color}">${p.flag} ${nm}</span>`;
+}
+
+/* ---------- 渲染热销赛道卡片 ---------- */
+function renderHot(){
+  const body=$('hotBody');
+  if(!body)return;
+  const myCats=products.map(p=>p.cat);
+  body.innerHTML=HOT.map(h=>{
+    const hit=myCats.includes(h.cat);
+    const hl=hit?' style="background:#fff7f4"':'';
+    return `<tr${hl}>
+      <td>${hit?'🔥 ':''}${h.cat}</td>
+      <td style="white-space:normal;min-width:160px">${h.item}</td>
+      <td>${'🔥'.repeat(Math.ceil(h.heat/2))} ${h.heat}</td>
+      <td>${h.low}–${h.high}</td>
+      <td>${'★'.repeat(h.comp)}</td>
+      <td style="white-space:normal;min-width:200px">${h.tip}<br><span class="small">📎 ${h.src}</span></td>
+      <td>${hit?'<span class="pill p-good">已布局</span>':'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---------- 中东多平台热销雷达 渲染 ---------- */
+let platCur='noon';
+const platPage={};
+const PLAT_PAGE_SIZE=8;
+function renderPlatforms(){
+  const tabs=$('platTabs');
+  if(!tabs)return;
+  tabs.innerHTML=PLATFORMS.map(p=>`<button class="ptab ${p.key===platCur?'on':''}" onclick="platSwitch('${p.key}')" style="--c:${p.color}">${p.icon||p.flag} ${p.name}</button>`).join('');
+  const p=PLATFORMS.find(x=>x.key===platCur);
+  const cnt=products.filter(x=>getFitPlatforms(x.cat).some(f=>f.key===p.key)).length;
+  const totalPages=Math.ceil(p.hot.length/PLAT_PAGE_SIZE);
+  let page=platPage[p.key]||1;
+  if(page>totalPages)page=totalPages||1;
+  if(page<1)page=1;
+  platPage[p.key]=page;
+  const pageItems=p.hot.slice((page-1)*PLAT_PAGE_SIZE,page*PLAT_PAGE_SIZE);
+  const hostName=(u)=>{
+    const h=(u.match(/^https?:\/\/([^/]+)/)||[])[1]||'';
+    if(h.includes('noon.com'))return 'Noon';
+    if(h.includes('amazon.ae'))return 'Amazon.ae';
+    if(h.includes('shein.com'))return 'SHEIN';
+    if(h.includes('namshi.com'))return 'Namshi';
+    if(h.includes('trendyol.com'))return 'Trendyol';
+    if(h.includes('temu.com'))return 'Temu';
+    if(h.includes('aliexpress.com'))return 'AliExpress';
+    if(h.includes('carrefouruae.com'))return 'Carrefour';
+    if(h.includes('sharafdg.com'))return 'Sharaf DG';
+    if(h.includes('mumzworld.com'))return 'Mumzworld';
+    if(h.includes('6thstreet.com'))return '6th Street';
+    return p.name;
+  };
+  $('platBody').innerHTML=`
+    <div class="plat-card" style="border-color:${p.color}">
+      <div class="plat-head" style="background:${p.color}1a">
+        <div style="display:flex;align-items:center;gap:8px"><div>${p.icon||p.flag}</div><div><b style="color:${p.color}">${p.name}</b> &nbsp;<span class="small">${p.role}</span></div></div>
+      </div>
+      <div class="plat-meta">
+        <div><b>主战场热销品类：</b>${p.best.join(' · ')}</div>
+        <div><b>定位：</b>${p.price}</div>
+        <div><b>适合谁：</b>${p.good}</div>
+        <div style="color:#c0392b"><b>⚠ 坑点：</b>${p.pit}</div>
+      </div>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>具体热销商品</th><th>客单价 AED</th><th>卖点 / 备注</th></tr></thead>
+        <tbody>${pageItems.map(h=>{
+        const realUrl=URL_MAP[p.key+'|'+h[3]]||platSearchUrl(p.key,h[3]);
+        const hasReal=!!URL_MAP[p.key+'|'+h[3]];
+        const dm=DATA_MAP[p.key+'|'+h[3]];
+        const linkName=hostName(realUrl);
+        const local=IMG_MAP[p.key+'|'+h[3]];
+        const thumb=local?`<img src="${local}" alt="${h[0]}" style="width:46px;height:46px;border-radius:9px;object-fit:cover;flex:none">`:`<span style="width:42px;height:42px;border-radius:9px;background:${p.color}1a;display:flex;align-items:center;justify-content:center;font-size:21px;flex:none">${iconFor(h[0])}</span>`;
+        return `<tr>
+          <td style="white-space:normal">
+            <a href="${realUrl}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit">
+              ${thumb}
+              <span><b>${h[0]}</b><br><span class="small" style="color:${p.color}">${hasReal?'🔗 在 '+linkName+' 看单品页':'🔗 在 '+p.name+' 搜索真实商品'}</span>${dm?`<br><span class="small" style="color:#333">💰 AED ${dm.price||'-'} · ★ ${dm.rating||'-'} · 💬 ${dm.reviews||'-'}</span>`:''}</span>
+            </a>
+          </td>
+          <td>${h[1]}</td>
+          <td style="white-space:normal">${h[2]}</td>
+        </tr>`;
+      }).join('')}</tbody>
+      </table></div>
+      <div class="p-page" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button class="btn" onclick="platGoPage('${p.key}',${page-1})" ${page===1?'disabled':''}>上一页</button>
+        <span class="small">第 <b>${page}</b> / ${totalPages} 页 · 共 ${p.hot.length} 款</span>
+        <button class="btn" onclick="platGoPage('${p.key}',${page+1})" ${page===totalPages?'disabled':''}>下一页</button>
+      </div>
+      <div class="small" style="margin-top:8px;background:#f1f6ff;padding:6px 9px;border-radius:6px">📌 你的候选中有 <b>${cnt}</b> 个适配本平台（品类命中其热销赛道）。点上方标签切换其它平台对照。</div>
+      <div class="small" style="margin-top:6px">📎 来源：${p.src}</div>
+    </div>`;
+}
+function platSwitch(k){platCur=k;platPage[k]=1;renderPlatforms();}
+function platGoPage(k,page){platPage[k]=page;renderPlatforms();}
+
+/* ---------- 定价计算器 / 定价表 ---------- */
+function priceCalc(){
+  const s=readSettings();
+  const platKey=$('pc_plat').value||'noon';
+  const pcfg=PLATFORM_FEES[platKey]||PLATFORM_FEES.noon;
+  const modes=pcfg.modes||[];
+  const sel=$('pc_noonMode');
+
+  // 动态填充当前平台的发货模式选项
+  const oldVal=sel.value;
+  sel.innerHTML='';
+  modes.forEach(m=>{
+    const opt=document.createElement('option');
+    opt.value=m.key; opt.textContent=m.name;
+    sel.appendChild(opt);
+  });
+  // 尽量保留原模式；若不存在则回退第一个
+  const hasOld=modes.some(m=>m.key===oldVal);
+  sel.value=hasOld?oldVal:(modes[0]?modes[0].key:'');
+  const mode=modes.find(m=>m.key===sel.value)||modes[0]||{};
+
+  // 用选中模式覆盖费率
+  let cfg={...pcfg,...mode};
+
+  // 同步「官方仓/平台物流」状态指示器
+  $('pc_fbn').checked=!!mode.isOfficial;
+  $('pc_fbnLabel').textContent=mode.isOfficial?'走平台官方仓/物流':'卖家自发货/非官方物流';
+
+  // 展示当前发货模式的佣金系数与说明
+  const baseComm=(s.commission[$('pc_cat').value]!==undefined)?s.commission[$('pc_cat').value]:(s.commission['其他']!==undefined?s.commission['其他']:cfg.defaultComm);
+  const modeComm=baseComm*(mode.factor||1);
+  $('pc_modeInfo').innerHTML=
+    `佣金系数 <b>${(mode.factor||1).toFixed(2)}</b> · 当前品类佣金 <b>${(modeComm*100).toFixed(1)}%</b> `+
+    `<span style="color:var(--muted)">｜ ${mode.tip||''}</span>`;
+
+  // 更新平台相关文案
+  $('pc_tag').textContent=`按 ${cfg.name} ${mode.name||''} 反推`;
+  $('pc_feeSource').textContent=`费率：${cfg.name} · ${mode.name||''} · 佣金系数 ${(mode.factor||1).toFixed(2)}｜${pcfg.note||''}`;
+  $('pc_note').textContent=`说明：${mode.tip||pcfg.note||''} 未含广告费(CPC)、退货；VAT 按所选市场单列，利润/净收入为税前。建议售价=含税消费者价，反推达成目标利润率。`;
+
+  const cost=parseFloat($('pc_cost').value)||0;
+  const cat=$('pc_cat').value;
+  let comm=baseComm*(mode.factor||1);
+
+  const w=parseFloat($('pc_w').value)||0.5;
+  const l=parseFloat($('pc_l').value)||10, wd=parseFloat($('pc_wd').value)||10, h=parseFloat($('pc_h').value)||10;
+  const target=clamp(parseFloat($('pc_target').value)||30,1,90)/100;
+  const costAED=cost/s.rate;
+  const vol=(l*wd*h)/s.volDiv;
+  const cw=Math.max(w,vol);
+  const fbn=(cfg.fbnBase||0)+(cfg.fbnPerKg||0)*cw+Math.max(0,(l+wd+h)/100-1)*(cfg.fbnSize||0);
+  const firstMile=(cfg.firstMile||0)*cw;
+  const base=fbn+firstMile+costAED;
+  const denom=1-comm-target;
+  const net=denom>0?base/denom:0;                       // 净价(ex-VAT)，按目标利润率反推
+  const vatRate=parseFloat($('pc_vat').value)||0;
+  const suggest=net>0?net*(1+vatRate):0;               // 建议售价=含税消费者价
+  const breakEvenNet=(1-comm)>0?base/(1-comm):0;
+  const breakEven=breakEvenNet*(1+vatRate);            // 保本价(含税)
+  const vatAmt=net*vatRate;                            // VAT 税费
+  const modeTag=mode.factor&&mode.factor!==1?`（已按 ${(mode.factor*100).toFixed(0)}% 系数）`:'';
+  const suggestProfit=net>0?net-net*comm-fbn-firstMile-costAED:0;   // 净利(ex-VAT)
+  const suggestMargin=net>0?suggestProfit/net:0;
+  const isOk=suggestMargin>=target;
+  $('priceSummary').innerHTML=
+    `目标利润率 <b>${ (target*100).toFixed(0) }%</b> ｜ 实际佣金率 <b>${ (comm*100).toFixed(1) }%</b>${modeTag} ｜ VAT <b>${(vatRate*100).toFixed(0)}%</b>`;
+  const res=$('priceResult');
+  res.style.display='block';
+  $('pr_suggest').textContent=suggest>0?suggest.toFixed(1):'—';
+  $('pr_profit').textContent=net>0?(suggestProfit>=0?'+':'')+suggestProfit.toFixed(1)+' AED':'—';
+  $('pr_profit').style.color=suggestProfit>=0?'var(--green)':'var(--red)';
+  $('pr_margin').textContent=net>0?(suggestMargin*100).toFixed(1)+'%':'—';
+  $('pr_breakeven').textContent=breakEven.toFixed(1)+' AED';
+  $('pr_base').textContent=base.toFixed(1)+' AED';
+  $('pr_comm').textContent=(comm*100).toFixed(1)+'%';
+  $('pr_vat').textContent=net>0?vatAmt.toFixed(1)+' AED':'—';
+  $('pr_net').textContent=net>0?net.toFixed(1)+' AED':'—';
+  $('pr_status').innerHTML=isOk?'<span class="pill p-good">达标</span>':'<span class="pill p-bad">偏低</span>';
+}
+function loadSelectedToPrice(){
+  if(selected<0||!results[selected]){alert('请先在「选品分析结果」里点选一个候选品');return;}
+  const p=results[selected].p;
+  $('pc_cost').value=p.cost;
+  $('pc_cat').value=p.cat;
+  $('pc_w').value=p.weight;
+  $('pc_l').value=p.l;$('pc_wd').value=p.w;$('pc_h').value=p.h;
+  priceCalc();
+}
+
+/* ---------- 录入 ---------- */
+function addProduct(){
+  const p={
+    name:$('f_name').value.trim()||'未命名产品',
+    cat:$('f_cat').value,
+    demand:clamp(num('f_demand'),1,10),
+    comp:clamp(num('f_comp'),1,10),
+    cost:num('f_cost'),
+    price:num('f_price'),
+    weight:num('f_weight'),
+    l:num('f_l'),w:num('f_w'),h:num('f_h'),
+    cert:$('f_cert').value,
+    sens:$('f_sens').value,
+    season:$('f_season').value,
+    notes:$('f_notes').value.trim()
+  };
+  products.push(p);
+  recompute();
+}
+
+function parseBulk(){
+  const txt=$('bulk').value.trim();
+  if(!txt){$('bulkMsg').textContent='请先粘贴数据';return;}
+  const lines=txt.split(/\n+/);
+  if(lines.length<2){$('bulkMsg').textContent='至少需要表头一行 + 一条数据';return;}
+  const head=lines[0].split(/[\t,]/).map(s=>s.trim());
+  const map={};
+  head.forEach((h,i)=>{
+    const k=h.replace(/[（(].*$/,'');
+    if(/名称|name/i.test(k))map.name=i;
+    else if(/品类|category|cat/i.test(k))map.cat=i;
+    else if(/需求|demand/i.test(k))map.demand=i;
+    else if(/竞争|comp/i.test(k))map.comp=i;
+    else if(/成本|cost/i.test(k))map.cost=i;
+    else if(/售价|price/i.test(k))map.price=i;
+    else if(/实重|重量|weight/i.test(k))map.weight=i;
+    else if(/长|length/i.test(k))map.l=i;
+    else if(/宽|width/i.test(k))map.w=i;
+    else if(/高|height/i.test(k))map.h=i;
+    else if(/认证|cert/i.test(k))map.cert=i;
+    else if(/敏感|sens/i.test(k))map.sens=i;
+    else if(/季节|season|文化/i.test(k))map.season=i;
+    else if(/备注|note/i.test(k))map.notes=i;
+  });
+  let n=0;
+  for(let r=1;r<lines.length;r++){
+    const c=lines[r].split(/[\t,]/);
+    if(c.length<map.price+1)continue;
+    const get=(k,d)=>map[k]!==undefined&&c[map[k]]!==undefined?c[map[k]].trim():d;
+    const sens=get('sens','无');
+    const season=get('season','常青');
+    products.push({
+      name:get('name','未命名产品'),
+      cat:get('cat','其他'),
+      demand:clamp(parseFloat(get('demand','7'))||7,1,10),
+      comp:clamp(parseFloat(get('comp','6'))||6,1,10),
+      cost:parseFloat(get('cost','0'))||0,
+      price:parseFloat(get('price','0'))||0,
+      weight:parseFloat(get('weight','0.5'))||0.5,
+      l:parseFloat(get('l','10'))||10,
+      w:parseFloat(get('w','10'))||10,
+      h:parseFloat(get('h','10'))||10,
+      cert:['无','Saber','清真','其他'].includes(get('cert','无'))?get('cert','无'):'无',
+      sens:['无','带电','液体粉末','儿童用品'].includes(sens)?sens:'无',
+      season:['常青','斋月','夏季','冬季','宗教敏感'].includes(season)?season:'常青',
+      notes:get('notes','')
+    });
+    n++;
+  }
+  $('bulkMsg').textContent='成功导入 '+n+' 条';
+  recompute();
+}
+
+function clearAll(){products=[];results=[];selected=-1;recompute();$('bulkMsg').textContent='';}
+
+function loadSample(){
+  products=[
+    {name:'便携蓝牙音箱',cat:'电子电器',demand:8,comp:6,cost:60,price:120,weight:0.5,l:20,w:15,h:10,cert:'无',sens:'带电',season:'常青',notes:'客单价高、复购一般'},
+    {name:'瑜伽垫',cat:'运动户外',demand:7,comp:5,cost:35,price:85,weight:1.0,l:62,w:14,h:14,cert:'无',sens:'无',season:'常青',notes:'轻、卷装体积偏大'},
+    {name:'斋月星星灯串',cat:'家居家纺',demand:9,comp:4,cost:25,price:75,weight:0.4,l:18,w:12,h:8,cert:'无',sens:'带电',season:'斋月',notes:'强季节性、窗口约2个月'},
+    {name:'儿童遥控车',cat:'母婴玩具',demand:7,comp:7,cost:90,price:180,weight:1.8,l:40,w:25,h:20,cert:'Saber',sens:'儿童用品',season:'常青',notes:'强制Saber、体积重偏高'},
+    {name:'防晒冰丝袖套',cat:'运动户外',demand:6,comp:5,cost:8,price:35,weight:0.1,l:18,w:12,h:2,cert:'无',sens:'无',season:'夏季',notes:'极轻小、夏天刚需'},
+    {name:'阿拉伯长袍(男)',cat:'时尚服饰',demand:8,comp:6,cost:55,price:140,weight:0.6,l:35,w:25,h:5,cert:'无',sens:'无',season:'常青',notes:'本地化强、文化适配好'}
+  ];
+  recompute();
+  priceCalc();
+}
+
+/* ---------- 计算 + 渲染 ---------- */
+function recompute(){
+  const s=readSettings();
+  results=products.map((p,idx)=>{const r=compute(p,s);return {p,r,_orig:idx};});
+  results.sort((a,b)=>b.r.total-a.r.total);
+  renderTable();
+  renderHot();
+  renderPlatforms();
+  renderPet();
+  if(results.length){
+    selected=0;drawRadar(results[0]);
+  }else{
+    $('rankBody').innerHTML='<tr><td colspan="11" class="empty">暂无数据，请先录入或载入示例</td></tr>';
+    $('radar').innerHTML='';$('radarTitle').textContent='六维雷达图';$('radarDetail').textContent='';
+  }
+  $('countTag').textContent=results.length+' 个候选';
+}
+
+function grade(t){return t>=75?{c:'p-good',t:'优 · 重点推'}:t>=60?{c:'p-mid',t:'良 · 可试'}:{c:'p-bad',t:'慎 · 再评估'};}
+
+function renderTable(){
+  if(!results.length)return;
+  let html='';
+  results.forEach((it,i)=>{
+    const g=grade(it.r.total);
+    const t=it.r.total.toFixed(1);
+    const prof=it.r.profit;
+    const mar=(it.r.margin*100).toFixed(1);
+    html+=`<tr data-i="${i}" class="${i===selected?'sel':''}" onclick="selectRow(${i})">
+      <td>${i+1}</td>
+      <td>${it.p.name}</td>
+      <td>${it.p.cat}</td>
+      <td style="text-align:center">${hotInfo(it.p.cat)?'<span title="热销赛道">🔥</span>':'—'}</td>
+      <td style="white-space:normal">${getFitPlatforms(it.p.cat).map(f=>platTag(f.key)).join('')||'—'}</td>
+      <td>${it.p.price.toFixed(0)} AED</td>
+      <td style="color:${prof>=0?'var(--green)':'var(--red)'}">${prof>=0?'+':''}${prof.toFixed(1)}</td>
+      <td>${mar}%</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="bar" style="flex:1"><i style="width:${t}%"></i></div><span class="score">${t}</span></div></td>
+      <td><span class="pill ${g.c}">${g.t}</span></td>
+      <td class="del" onclick="event.stopPropagation();delRow(${i})">✕</td>
+    </tr>`;
+  });
+  $('rankBody').innerHTML=html;
+}
+
+function selectRow(i){selected=i;renderTable();drawRadar(results[i]);}
+
+function delRow(i){
+  const idx=results[i]._orig;
+  products.splice(idx,1);
+  recompute();
+}
+
+/* ---------- 雷达图（纯 SVG，离线） ---------- */
+function drawRadar(item){
+  const sc=item.r.scores;
+  const data=[
+    {k:'市场需求',v:sc.demand},
+    {k:'竞争友好',v:sc.competition},
+    {k:'利润空间',v:sc.profit},
+    {k:'物流友好',v:sc.logistics},
+    {k:'合规安全',v:sc.compliance},
+    {k:'文化适配',v:sc.culture}
+  ];
+  const size=260,cx=size/2,cy=size/2,R=92,n=data.length;
+  const ang=i=>(-90+i*360/n)*Math.PI/180;
+  let grid='',axes='',labels='',poly='',dots='';
+  for(let ring=1;ring<=4;ring++){
+    let pts=[];
+    for(let i=0;i<n;i++){const rr=R*ring/4;pts.push((cx+rr*Math.cos(ang(i))).toFixed(1)+','+(cy+rr*Math.sin(ang(i))).toFixed(1));}
+    grid+=`<polygon points="${pts.join(' ')}" fill="none" stroke="#eceef1" stroke-width="1"/>`;
+  }
+  for(let i=0;i<n;i++){
+    const x=cx+R*Math.cos(ang(i)),y=cy+R*Math.sin(ang(i));
+    axes+=`<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#eceef1"/>`;
+    const lx=cx+(R+16)*Math.cos(ang(i)),ly=cy+(R+16)*Math.sin(ang(i));
+    const anchor=Math.abs(Math.cos(ang(i)))<0.3?'middle':(Math.cos(ang(i))>0?'start':'end');
+    labels+=`<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" font-size="11" fill="#666" text-anchor="${anchor}" dominant-baseline="middle">${data[i].k}</text>`;
+  }
+  let dpts=[];
+  for(let i=0;i<n;i++){const rr=R*data[i].v/100;dpts.push((cx+rr*Math.cos(ang(i))).toFixed(1)+','+(cy+rr*Math.sin(ang(i))).toFixed(1));}
+  poly=`<polygon points="${dpts.join(' ')}" fill="rgba(245,81,44,0.22)" stroke="#F5512C" stroke-width="2"/>`;
+  for(let i=0;i<n;i++){const rr=R*data[i].v/100;const x=cx+rr*Math.cos(ang(i)),y=cy+rr*Math.sin(ang(i));dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#F5512C"/>`;}
+
+  $('radar').innerHTML=`<svg viewBox="0 0 ${size} ${size}" width="100%" height="260">${grid}${axes}${labels}${poly}${dots}</svg>`;
+  $('radarTitle').textContent='六维雷达图 · '+item.p.name;
+  const r=item.r;
+  $('radarDetail').innerHTML=
+    `综合分 <b style="color:var(--noon)">${r.total.toFixed(1)}</b> ｜ 计费重量 ${r.cw.toFixed(2)}kg<br>`+
+    `单件利润 <b>${r.profit>=0?'+':''}${r.profit.toFixed(1)} AED</b> ｜ 利润率 ${(r.margin*100).toFixed(1)}%<br>`+
+    `平台佣金 ${(r.comm*100).toFixed(0)}% · FBN ${r.fbn.toFixed(1)} · 头程 ${r.firstMile.toFixed(1)} · 成本 ${r.costAED.toFixed(1)}<br>`+
+    `<span style="color:var(--noon)">💡 ${(buildAdvice(item.p,item.r)[0]||'')}</span>`;
+}
+
+/* ---------- 导出报告 ---------- */
+function exportMD(){
+  if(!results.length){$('report').value='暂无数据';return;}
+  const s=readSettings();
+  let md=`# noon 中东选品分析报告\n生成时间：${new Date().toLocaleString('zh-CN')}\n候选数量：${results.length}\n\n`;
+  md+=`## 一、综合排名\n| 排名 | 产品 | 品类 | 售价(AED) | 单件利润 | 利润率 | 综合分 | 评级 |\n|---|---|---|---|---|---|---|---|\n`;
+  results.forEach((it,i)=>{
+    const g=grade(it.r.total);
+    md+=`| ${i+1} | ${it.p.name} | ${it.p.cat} | ${it.p.price.toFixed(0)} | ${it.r.profit.toFixed(1)} | ${(it.r.margin*100).toFixed(1)}% | ${it.r.total.toFixed(1)} | ${g.t} |\n`;
+  });
+  md+=`\n## 二、逐品建议\n`;
+  results.forEach((it,i)=>{
+    const r=it.r,p=it.p;
+    const g=grade(r.total);
+    md+=`\n### ${i+1}. ${p.name}（${p.cat}）— ${g.t} [${r.total.toFixed(1)}分]\n`;
+    md+=`- 利润：${r.profit>=0?'+':''}${r.profit.toFixed(1)} AED，利润率 ${(r.margin*100).toFixed(1)}%（成本 ${r.costAED.toFixed(1)} + 佣金 ${(r.comm*100).toFixed(0)}% + FBN ${r.fbn.toFixed(1)} + 头程 ${r.firstMile.toFixed(1)}）\n`;
+    md+=`- 计费重量 ${r.cw.toFixed(2)}kg（实重 ${p.weight}kg / 体积重 ${(p.l*p.w*p.h/s.volDiv).toFixed(2)}kg）\n`;
+    md+=`- 需求热度 ${p.demand}/10，竞争强度 ${p.comp}/10，文化季节：${p.season}\n`;
+    let warn=[];
+    if(p.cert==='Saber')warn.push('沙特强制 Saber/SCSAS 认证，需额外成本与周期');
+    if(p.cert==='清真')warn.push('需清真认证');
+    if(p.sens==='带电')warn.push('带电产品物流受限，需合规申报');
+    if(p.sens==='液体粉末')warn.push('液体/粉末属敏感品，清关风险高');
+    if(p.sens==='儿童用品')warn.push('儿童用品认证与合规要求严');
+    if(p.season==='斋月')warn.push('强季节性，备货与营销需卡准斋月前约2个月');
+    if(p.season==='宗教敏感')warn.push('涉宗教敏感元素，务必本地化审核');
+    if(r.cw>5)warn.push('计费重量偏大，物流与FBN成本偏高');
+    if(r.margin<0.15)warn.push('利润率偏低(<15%)，建议压成本或提价');
+    md+=`- 风险提示：${warn.length?warn.join('；'):'无明显硬伤'}\n`;
+    md+=`- 备注：${p.notes||'—'}\n`;
+    const adv=buildAdvice(p,r);
+    md+=`- 运营建议：\n`+adv.map(t=>'  - '+t).join('\n')+'\n';
+  });
+  md+=`\n---\n*本报告的费率均为经验估算，正式备货前请以 noon 官方账单与实际认证成本为准。*\n`;
+  $('report').value=md;
+  return md;
+}
+
+function printReport(){
+  const md=exportMD();
+  const w=window.open('','_blank');
+  if(!w){alert('请允许弹出窗口以打印/另存为PDF');return;}
+  w.document.write('<pre style="font-family:inherit;white-space:pre-wrap;padding:24px;line-height:1.6">'+md.replace(/</g,'&lt;')+'</pre>');
+  w.document.close();
+  w.print();
+}
+
+/* ---------- 选品搜索（跨平台真实商品，按类目 + 关键词筛选） ---------- */
+let SS=[];
+let PROXY_ON=false, API_ON=false, API_PROV='';
+const SS_CATS=['手机配件','电子电器','电脑办公','美妆个护','时尚服饰','鞋靴箱包','家居家纺','厨房用品','母婴玩具','运动户外','汽车用品','食品保健','宠物用品','办公文具','珠宝手表','其他'];
+function ssCatOf(name,kw,note){
+  const s=(name+' '+kw+' '+note).toLowerCase();
+  const rules=SS_CAT_RULES;
+  for(const [cat,kws] of rules){for(const k of kws){if(s.indexOf(k)>=0)return cat;}}
+  return '其他';
+}
+const SS_CAT_RULES=[
+  ['宠物用品',['pet','cat','dog','scratching','猫咪','猫','狗','宠物']],
+  ['汽车用品',['car','vehicle','车载','汽车']],
+  ['母婴玩具',['kids','children','toy','baby','儿童','婴儿','早教','玩具']],
+  ['食品保健',['dates','food','椰枣','食品','坚果']],
+  ['珠宝手表',['watch','jewel','ring','手表','首饰','珠宝']],
+  ['鞋靴箱包',['boots','sneakers','slippers','tote','belt','鞋','靴','包','腰带']],
+  ['美妆个护',['perfume','oud','attar','serum','makeup','grooming','shaver','toothbrush','剃须','牙刷','香水','护肤','美妆']],
+  ['运动户外',['yoga','sport','gym','camping','scooter','swim','outdoor','water bottle','运动','瑜伽','露营','健身','泳','水杯','保温']],
+  ['电脑办公',['keyboard','mouse','usb-c','hub','laptop','键盘','鼠标']],
+  ['手机配件',['phone','charger','cable','tempered','case','数据线','手机壳','快充','充电器','手机']],
+  ['厨房用品',['air fryer','blender','coffee','炸锅','料理','厨房','榨汁']],
+  ['家居家纺',['lamp','rack','storage','lantern','organizer','mattress','gift','礼品','礼盒','气球','balloon','派对','party','收纳','台灯','灯笼','床','家居','置物','咖啡壶']],
+  ['电子电器',['earbuds','headphone','speaker','echo','kindle','ps5','vacuum','robot','purifier','led','bluetooth','耳机','音箱','扫地','净化','灯带']],
+  ['时尚服饰',['thobe','abaya','dress','shirt','jeans','skirt','polo','swimsuit','bikini','blazer','jacket','hoodie','cardigan','trench','suit','tshirt','shorts','leggings','bra','pajama','sweater','knit','shemagh','ghutra','衣物','连衣裙','长袍','睡衣','卫衣','外套','西装','头巾','头箍','服饰','内衣','lingerie','underwear']],
+  ['办公文具',['pen','notebook','文具','笔']]
+];
+function ssGuessCat(q){
+  if(!q)return '';
+  const s=q.toLowerCase();
+  for(const [cat,kws] of SS_CAT_RULES){for(const k of kws){if(s.indexOf(k)>=0)return cat;}}
+  return '';
+}
+function buildSS(){
+  SS=[];
+  for(const p of PLATFORMS){
+    for(const h of p.hot){
+      const name=h[0],price=h[1],note=h[2],kw=h[3];
+      const key=p.key+'|'+kw;
+      SS.push({
+        plat:p.key,platName:p.name,flag:p.flag,color:p.color,
+        name,price,note,kw,
+        cat:ssCatOf(name,kw,note),
+        img:IMG_MAP[key]||'',
+        url:URL_MAP[key]||platSearchUrl(p.key,kw),
+        dm:DATA_MAP[key]||null
+      });
+    }
+  }
+}
+function ssInit(){
+  buildSS();
+  const catSel=$('ss_cat'),platSel=$('ss_plat');
+  const cats=[...new Set(SS.map(x=>x.cat))].sort((a,b)=>{const ia=SS_CATS.indexOf(a),ib=SS_CATS.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});
+  catSel.innerHTML='<option value="">全部类目</option>'+cats.map(c=>`<option value="${c}">${c}（${SS.filter(x=>x.cat===c).length}）</option>`).join('');
+  platSel.innerHTML='<option value="">全部平台</option>'+PLATFORMS.map(p=>`<option value="${p.key}">${p.flag} ${p.name}</option>`).join('');
+  fetch('/api/config').then(r=>r.json()).then(j=>{PROXY_ON=!!(j&&j.proxyEnabled);API_ON=!!(j&&j.apiEnabled);API_PROV=j&&j.apiProvider||'';}).catch(()=>{});
+  ssSearch();
+}
+function ssSearch(){
+  const qRaw=($('ss_q').value||'').trim();
+  const q=qRaw.toLowerCase();
+  let cat=$('ss_cat').value,plat=$('ss_plat').value;
+  const box=$('ssResult');
+  if(!q && !cat && !plat){
+    box.innerHTML='<div class="empty">🔍 请输入关键词或选择类目 / 平台，下方将显示匹配的真实在售商品。</div>';
+    return;
+  }
+  // 若用户没选类目，尝试按关键词自动推断类目
+  const guessed=q&&!cat?ssGuessCat(qRaw):'';
+  // 本地库匹配：优先精确匹配；如果没命中但推断出类目，也显示同类目热门选品作为参考
+  let list=SS.filter(x=>
+    (!cat||x.cat===cat)&&
+    (!plat||x.plat===plat)&&
+    (!q||(x.cat+' '+x.name+' '+x.kw+' '+x.note+' '+x.platName).toLowerCase().indexOf(q)>=0)
+  );
+  const exactCount=list.length;
+  if(!list.length && guessed){
+    list=SS.filter(x=>x.cat===guessed && (!plat||x.plat===plat));
+  }
+  const term=qRaw||cat;
+  // 1) 库中已抓到的真实商品卡
+  let cards='';
+  if(list.length){
+    let title='';
+    if(exactCount){
+      title='共找到 <b style="color:var(--noon)">'+exactCount+'</b> 个库中匹配选品';
+    }else{
+      title='库中暂无「'+term+'」的精确匹配，已自动展开到 <b style="color:var(--noon)">'+guessed+'</b> 类目，可参考下方同类目热销品';
+    }
+    cards='<div class="small" style="margin-bottom:8px">'+title+'</div><div class="ss-grid">'+list.slice(0,18).map(x=>{
+      const icon=iconFor(x.name);
+      const imgHtml=x.img?`<img src="${x.img}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><span class="ss-emoji" style="display:none">${icon}</span>`:`<span class="ss-emoji">${icon}</span>`;
+      const meta=x.dm?`<div class="ss-rating">💰 AED ${x.dm.price} · ★ ${x.dm.rating} · 💬 ${x.dm.reviews}</div>`:`<div class="ss-rating">📦 ${x.price} AED</div>`;
+      return `<div class="ss-card">
+        <div class="ss-img">${imgHtml}</div>
+        <div class="ss-pf" style="background:${x.color}">${x.flag} ${x.platName}</div>
+        <div class="ss-body">
+          <div class="ss-name">${x.name}</div>
+          ${meta}
+          <div class="ss-note">${x.note||''}</div>
+          <a class="btn primary ss-btn" href="${x.url}" target="_blank" rel="noopener">查看商品 ↗</a>
+        </div>
+      </div>`;
+    }).join('')+'</div>';
+  } else {
+    const suggest=guessed?'已识别为 <b style="color:var(--noon)">'+guessed+'</b> 类目，正在实时拉取真实商品…':'库中暂无完全匹配的在售商品，下面直接去各平台搜「'+term+'」👇';
+    cards='<div class="empty">'+suggest+'</div>';
+  }
+  // 2) 跨平台直达：任意关键词生成 13 个平台官方搜索页链接
+  const jumpBtns=PLATFORMS.map(p=>`<a class="ss-jump" style="border-color:${p.color}" href="${platSearchUrl(p.key,term)}" target="_blank" rel="noopener">${p.flag} ${p.name}</a>`).join('');
+  box.innerHTML=cards+
+    '<div class="ss-jump-wrap"><div class="ss-jump-title">🌐 去各平台搜「'+term+'」（点击即跳转对应平台搜索页）</div>'+
+    '<div class="ss-jump-row">'+jumpBtns+'</div></div>';
+}
+function ssReset(){$('ss_q').value='';$('ss_cat').value='';$('ss_plat').value='';ssSearch();$('ssLive').innerHTML='';}
+let SS_LIVE_TIMER=null;
+function ssLiveDebounced(){
+  if(SS_LIVE_TIMER)clearTimeout(SS_LIVE_TIMER);
+  SS_LIVE_TIMER=setTimeout(()=>{ssLiveNow();},900);
+}
+async function ssLiveNow(term){
+  if(term===undefined){
+    const kw=($('ss_q').value||'').trim();
+    const cat=$('ss_cat').value;
+    // 若有关键词，用关键词；若只有类目，用类目；都没有则看推断类目
+    term=kw||(cat||ssGuessCat(kw));
+  }
+  if(!term){$('ssLive').innerHTML='';return;}
+  const box=$('ssLive');
+  box.innerHTML='<div class="small">⏳ 正在从各平台实时拉取「'+term+'」的真实商品…</div>';
+  try{
+    const r=await fetch('/api/search?q='+encodeURIComponent(term));
+    if(!r.ok) throw new Error('http '+r.status);
+    const j=await r.json();
+    const items=(j.items||[]).filter(x=>!x.blocked && x.platform!=='_err');
+    if(!items.length){box.innerHTML='<div class="small">实时拉取未返回可展示商品（平台反爬或网络限制，可改用下方跳转）。</div>';return;}
+    const scope=PROXY_ON?' / SHEIN / 速卖通 等全平台':(API_ON?(' / SHEIN / 速卖通 等（'+API_PROV+'）'):'');
+    box.innerHTML='<div class="small" style="margin-bottom:8px">🔥 实时拉取 <b style="color:var(--noon)">'+items.length+'</b> 个真实商品（Noon / Amazon'+scope+'）</div><div class="ss-grid">'+items.map(x=>{
+      const icon=iconFor(x.name||'');
+      const imgHtml=x.img?`<img src="${x.img}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><span class="ss-emoji" style="display:none">${icon}</span>`:`<span class="ss-emoji">${icon}</span>`;
+      const isNum=x.price&&/^\d+(\.\d+)?$/.test(x.price);
+      const meta=(x.price?('💰 '+x.price+(isNum?' AED':'')):'')+(x.rating?(' · ★ '+x.rating):'')+(x.reviews?(' · 💬 '+x.reviews):'');
+      const pf=x.platformName||(x.platform==='amazon'?'Amazon.ae':(x.platform==='noon'?'Noon':x.platform));
+      const col=x.color||'#888';
+      return `<div class="ss-card">
+        <div class="ss-img">${imgHtml}</div>
+        <div class="ss-pf" style="background:${col}">${pf}</div>
+        <div class="ss-body">
+          <div class="ss-name">${x.name||''}</div>
+          <div class="ss-rating">${meta||'—'}</div>
+          ${x.url?`<a class="btn primary ss-btn" href="${x.url}" target="_blank" rel="noopener">查看商品 ↗</a>`:''}
+        </div>
+      </div>`;
+    }).join('')+'</div>';
+  }catch(e){
+    box.innerHTML='<div class="small">（本地实时后端未运行，仅显示预存商品与平台跳转。需实时拉取请在本地执行 <code>python server.py</code> 后刷新）</div>';
+  }
+}
+async function ssLive(){return ssLiveNow();}
+
+/* 初始载入示例，打开即可见效果 */
+loadSample();
+ssInit();
+</script>
+</body>
+</html>
