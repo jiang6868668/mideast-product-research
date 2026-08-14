@@ -204,14 +204,15 @@
   <!-- 粘贴链接生成 Noon 模板 -->
   <div class="card">
     <h2>🔗 粘贴商品链接生成 Noon 模板 <span class="tag">丢链接 → 自动解析 → 导出 CSV</span></h2>
-    <p class="small" style="margin:0 0 10px">把 <b>Noon / Amazon.ae / SHEIN / Namshi / Trendyol</b> 等中东平台的<b>商品页链接</b>粘进来，工具会自动抓取标题、图片、价格、描述并映射成 Noon NIS 上传行。自动抓取依赖公共代理，若你网络下不通，会直接打开手动填写表单，照样一键导出。</p>
+    <p class="small" style="margin:0 0 10px">把 <b>Noon / Amazon.ae / SHEIN / Namshi / Trendyol</b> 等中东平台的<b>商品页链接</b>粘进来（每行一条，支持批量），工具会自动抓取标题、图片、价格、描述并映射成 Noon NIS 上传行。自动抓取依赖公共代理，若你网络下不通，会直接打开手动填写表单，照样一键导出。</p>
     <div class="grid g4">
       <div style="grid-column:1 / -1">
-        <label>🔗 商品链接</label>
-        <input id="linkUrl" type="text" placeholder="https://www.noon.com/...  或  https://www.amazon.ae/..." style="width:100%;padding:11px 13px;font-size:15px;border:1px solid var(--line);border-radius:10px;outline:none;box-sizing:border-box">
+        <label>🔗 商品链接（每行一条，批量粘贴）</label>
+        <textarea id="linkUrl" rows="5" placeholder="https://www.noon.com/...&#10;https://www.amazon.ae/...&#10;https://www.shein.com/...&#10;（每行一条链接，一次可粘贴多条）" style="width:100%;padding:11px 13px;font-size:15px;border:1px solid var(--line);border-radius:10px;outline:none;box-sizing:border-box;resize:vertical"></textarea>
+        <p class="small" style="margin-top:4px;color:#888">已识别 <b id="linkCount">0</b> 条链接</p>
       </div>
       <div style="display:flex;align-items:flex-end;gap:8px">
-        <button class="btn primary" onclick="parseProductUrl()">🪄 解析并生成</button>
+        <button class="btn primary" onclick="parseProductUrls()">🪄 批量解析并生成</button>
         <button class="btn" onclick="clearLinkForm()">清空</button>
         <button class="btn" onclick="exportLinkNoon()">⬇️ 导出 Noon 模板</button>
       </div>
@@ -1552,79 +1553,119 @@ function parseJinaText(text,url){
 }
 function linkDomain(url){try{return new URL(url).hostname.replace(/^www\./,'');}catch(e){return 'LINK';}}
 
-async function parseProductUrl(){
-  const url=($('linkUrl').value||'').trim();
+let LINK_PRODUCTS=[];
+
+// 实时统计链接条数
+$('linkUrl').addEventListener('input',function(){
+  const text=this.value||'';
+  const urls=text.split(/\n/).map(s=>s.trim()).filter(s=>/^https?:\/\//i.test(s));
+  $('linkCount').textContent=urls.length;
+});
+
+async function parseProductUrls(){
+  const raw=($('linkUrl').value||'').trim();
+  const urls=raw.split(/\n/).map(s=>s.trim()).filter(s=>/^https?:\/\//i.test(s));
   const st=$('linkStatus');
-  if(!/^https?:\/\//i.test(url)){st.innerHTML='<span style="color:#c0392b">⚠️ 请输入有效的 http/https 商品链接</span>';return;}
-  st.innerHTML='<span style="color:#2980b9">⏳ 正在抓取并解析商品信息…（若长时间无反应，可能是公共代理在你网络下不通，可手动填写下方表单）</span>';
+  if(!urls.length){st.innerHTML='<span style="color:#c0392b">⚠️ 请输入有效的 http/https 商品链接（每行一条）</span>';return;}
+  LINK_PRODUCTS=[];
   $('linkForm').innerHTML='';
-  let text=null;
-  try{text=await fetchHtmlText(url);}catch(e){}
-  let p;
-  if(!text){
-    st.innerHTML='<span style="color:#c0392b">⚠️ 自动抓取失败（公共代理在你网络下可能不通）。已为你打开<b>手动填写表单</b>：把商品页上看到的标题 / 图片 / 价格填进去，一样能导出 Noon 模板。</span>';
-    renderLinkForm({url,title:'',image:'',desc:'',brand:'',price:'',currency:''});
-    return;
+  st.innerHTML='<span style="color:#2980b9">⏳ 正在批量解析 '+urls.length+' 条链接…（若长时间无反应，可能是公共代理在你网络下不通）</span>';
+  let ok=0,fail=0;
+  for(let i=0;i<urls.length;i++){
+    const url=urls[i];
+    st.innerHTML='<span style="color:#2980b9">⏳ 解析第 '+(i+1)+'/'+urls.length+' 条…</span>';
+    let p={url,title:'',image:'',desc:'',brand:'',price:'',currency:''};
+    try{
+      const text=await fetchHtmlText(url);
+      if(text){
+        const looksHtml=/<title|<meta|<html|<!doctype/i.test(text);
+        p = looksHtml ? parseHtmlMeta(text,url) : parseJinaText(text,url);
+        ok++;
+      }else{fail++;}
+    }catch(e){fail++;}
+    p._sku=buildSku(url);
+    p._idx=i;
+    LINK_PRODUCTS.push(p);
+    // 每解析完一条就渲染一次（渐进式）
+    renderLinkForms();
   }
-  const looksHtml=/<title|<meta|<html|<!doctype/i.test(text);
-  p = looksHtml ? parseHtmlMeta(text,url) : parseJinaText(text,url);
-  renderLinkForm(p);
-  const got=[p.title,p.image,p.price].filter(Boolean).length;
-  if(got>=2){
-    st.innerHTML='<span style="color:#27ae60">✅ 已自动解析：'+(p.title?('《'+trunc(escHtml(p.title),40)+'》'):'')+(p.price?(' · 参考价 '+escHtml(p.price)):'')+'。请核对并补全必填项（Brand / GTIN / 图片须 .jpeg 结尾 / 类目），再点导出。</span>';
+  // 最终状态
+  if(ok===urls.length){
+    st.innerHTML='<span style="color:#27ae60">✅ 全部 '+ok+' 条链接解析完成！请核对并补全必填项（Brand / GTIN / 图片须 .jpeg 结尾 / 类目），再点导出。</span>';
+  }else if(ok>0){
+    st.innerHTML='<span style="color:#e67e22">⚠️ 成功 '+ok+' 条 / 失败 '+fail+' 条（失败的已打开手动填写表单）。请补全后导出。</span>';
   }else{
-    st.innerHTML='<span style="color:#e67e22">⚠️ 仅识别到部分字段，已预填已知的，其余请手动补全后导出。</span>';
+    st.innerHTML='<span style="color:#c0392b">⚠️ 全部抓取失败（公共代理不通）。已为每条链接打开手动填写表单，填好后一样能导出。</span>';
   }
 }
 function buildSku(url){
   const d=linkDomain(url).split('.')[0].toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8)||'LINK';
   return d+'-'+Math.random().toString(36).slice(2,8).toUpperCase();
 }
-function renderLinkForm(p){
-  p.url=p.url||'';
-  p._sku=buildSku(p.url);
-  LINK_PRODUCT=p;
-  const v=(k,def)=> (p[k]!=null&&p[k]!=='')?p[k]:(def||'');
-  const f=(id,label,value,ph)=>'<div><label>'+label+'</label><input id="'+id+'" value="'+escAttr(value)+'" placeholder="'+(ph||'')+'" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;box-sizing:border-box"></div>';
-  $('linkForm').innerHTML=
-    '<div class="grid g3">'+
-      f('lf_sku','Partner SKU (Unique)',p._sku,'全局唯一，无空格/特殊符')+
-      f('lf_brand','Brand 品牌',v('brand'),'如 Nike')+
-      f('lf_title','Product Title (EN) 英文标题',v('title'),'英文，≤150字符')+
-      f('lf_title_ar','Product Title (AR) 阿拉伯标题','','(可选) 阿拉伯语站需填')+
-      f('lf_img','Image URLs 图片链接',v('image'),'公网链接，须以 .jpeg 结尾')+
-      f('lf_gtin','GTIN 国际条码','','(必填) EAN/UPC')+
-      f('lf_family','Family 大类','','(可选)')+
-      f('lf_type','Product Type 中类','','(可选)')+
-      f('lf_cat','Product Subtype 类目子类','','(必填) 末级类目')+
-      f('lf_price','参考价 (原站)',v('price')+(v('currency')?' '+v('currency'):''),'仅写入属性作参考')+
-    '</div>'+
-    '<div class="grid g3" style="margin-top:10px">'+
-      '<div style="grid-column:1 / -1"><label>Long Description (EN) 长描述</label><textarea id="lf_desc" rows="3" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;box-sizing:border-box">'+escHtml(v('desc'))+'</textarea></div>'+
-      '<div style="grid-column:1 / -1"><label>Feature Bullet (EN) 卖点</label><textarea id="lf_bullet" rows="2" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;box-sizing:border-box">'+escHtml(v('desc').slice(0,120))+'</textarea></div>'+
-    '</div>'+
-    '<p class="small" style="margin-top:8px">填好后点「⬇️ 导出 Noon 模板」下载 CSV。图片链接务必以 <b>.jpeg</b> 结尾；Brand / GTIN / 类目为 Noon 必填项，请补全。</p>';
+
+function renderLinkForms(){
+  if(!LINK_PRODUCTS.length){$('linkForm').innerHTML='';return;}
+  const f=(id,label,value,ph)=>'<div><label>'+label+'</label><input id="'+id+'" value="'+escAttr(value||'')+'" placeholder="'+(ph||'')+'" style="width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;box-sizing:border-box;font-size:13px"></div>';
+  let html='';
+  for(let i=0;i<LINK_PRODUCTS.length;i++){
+    const p=LINK_PRODUCTS[i];
+    const v=(k,def)=> (p[k]!=null&&p[k]!=='')?p[k]:(def||'');
+    const got=[p.title,p.image,p.price].filter(Boolean).length;
+    const tag=got>=2?'<span class="tag" style="background:#27ae60;color:#fff;font-size:11px;padding:1px 6px;border-radius:4px">自动解析</span>':
+              got>=1?'<span class="tag" style="background:#e67e22;color:#fff;font-size:11px;padding:1px 6px;border-radius:4px">部分识别</span>':
+              '<span class="tag" style="background:#95a5a6;color:#fff;font-size:11px;padding:1px 6px;border-radius:4px">手动填写</span>';
+    const pi='lf'+i;
+    html+='<div style="border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:12px;background:var(--bg)">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'+
+        '<b>#'+(i+1)+' '+trunc(escHtml(p.title||p.url),50)+' '+tag+'</b>'+
+        '<a href="'+escAttr(p.url)+'" target="_blank" style="font-size:12px;color:#2980b9;text-decoration:none">🔗 原始链接</a>'+
+      '</div>'+
+      '<div class="grid g3">'+
+        f(pi+'_sku','Partner SKU',p._sku,'唯一编码')+
+        f(pi+'_brand','Brand',v('brand'),'如 Nike')+
+        f(pi+'_title','Title (EN)',v('title'),'英文标题')+
+        f(pi+'_title_ar','Title (AR)','','阿拉伯语')+
+        f(pi+'_img','Image URLs',v('image'),'.jpeg 结尾')+
+        f(pi+'_gtin','GTIN','','EAN/UPC')+
+        f(pi+'_family','Family','','大类')+
+        f(pi+'_type','Type','','中类')+
+        f(pi+'_cat','Subtype 类目','','末级类目')+
+        f(pi+'_price','参考价',v('price')+(v('currency')?' '+v('currency'):''),'原站价格')+
+      '</div>'+
+      '<div class="grid g3" style="margin-top:8px">'+
+        '<div style="grid-column:1 / -1"><label>Description (EN)</label><textarea id="'+pi+'_desc" rows="2" style="width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;box-sizing:border-box;font-size:13px">'+escHtml(v('desc'))+'</textarea></div>'+
+      '</div>'+
+    '</div>';
+  }
+  html+='<p class="small" style="margin-top:8px">共 <b>'+LINK_PRODUCTS.length+'</b> 条商品。填好后点「⬇️ 导出 Noon 模板」合并下载一个 CSV。</p>';
+  $('linkForm').innerHTML=html;
 }
 function clearLinkForm(){
   $('linkUrl').value='';
+  $('linkCount').textContent='0';
   $('linkStatus').innerHTML='';
   $('linkForm').innerHTML='';
-  LINK_PRODUCT=null;
+  LINK_PRODUCTS=[];
 }
 function exportLinkNoon(){
-  if(!LINK_PRODUCT){alert('请先粘贴商品链接并点「解析并生成」，或在表单手动填写后导出。');return;}
+  if(!LINK_PRODUCTS.length){alert('请先粘贴商品链接并点「批量解析并生成」，或手动填写后导出。');return;}
   const g=id=>{const el=document.getElementById(id);return el?(el.value||'').trim():'';};
   const header=["Partner SKU (Unique)","Brand","Product Title (EN)","Product Title (AR)","Long Description (EN)","Long Description (AR)","Feature Bullet (EN)","Feature Bullet (AR)","Item Condition","What's in the box (EN)","What's in the box (AR)","GTIN","Image URLs","Family","Product Type","Product Subtype","Parent SKU","Parent Group Key","Child","Size Variation","Sizing Standard","Attribute Key","Attribute Value"];
-  const sku=g('lf_sku')||LINK_PRODUCT._sku;
-  const price=g('lf_price');
-  const rows=[[
-    sku, g('lf_brand'), g('lf_title'), g('lf_title_ar'),
-    g('lf_desc'), '', g('lf_bullet'), '',
-    'New', '', '', g('lf_gtin'), g('lf_img'),
-    g('lf_family'), g('lf_type'), g('lf_cat'),
-    sku, '', '', '', '', '',
-    price?('PriceRef('+(LINK_PRODUCT.currency||'原站')+')'):'', price?price:''
-  ]];
+  const rows=[];
+  for(let i=0;i<LINK_PRODUCTS.length;i++){
+    const p=LINK_PRODUCTS[i];
+    const pi='lf'+i;
+    const sku=g(pi+'_sku')||p._sku;
+    const price=g(pi+'_price');
+    rows.push([
+      sku, g(pi+'_brand'), g(pi+'_title'), g(pi+'_title_ar'),
+      g(pi+'_desc'), '', g(pi+'_desc')?g(pi+'_desc').slice(0,120):'', '',
+      'New', '', '', g(pi+'_gtin'), g(pi+'_img'),
+      g(pi+'_family'), g(pi+'_type'), g(pi+'_cat'),
+      sku, '', '', '', '', '',
+      price?('PriceRef('+(p.currency||'原站')+')'):'', price?price:''
+    ]);
+  }
   const esc=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
   const csv='\uFEFF'+[header,...rows].map(r=>r.map(esc).join(',')).join('\r\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
