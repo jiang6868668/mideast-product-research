@@ -1106,7 +1106,7 @@ const PLAT_PAGE_SIZE=8;
 function renderPlatforms(){
   const tabs=$('platTabs');
   if(!tabs)return;
-  tabs.innerHTML=PLATFORMS.map(p=>`<button class="ptab ${p.key===platCur?'on':''}" onclick="platSwitch('${p.key}')" style="--c:${p.color}">${p.icon||p.flag} ${p.name}</button>`).join('');
+  tabs.innerHTML=PLATFORMS.map(p=>`<button class="ptab ${p.key===platCur?'on':''}" onclick="platSwitch('${p.key}')" style="--c:${p.color}"><img src="images/logos/${p.key==='ali'?'ali':p.key==='6thstreet'?'sixthstreet':p.key}.png" alt="${p.name}" style="width:22px;height:22px;border-radius:4px;object-fit:contain;vertical-align:middle;margin-right:5px" onerror="this.style.display='none';this.nextSibling.textContent='${p.icon||p.flag} '"> <span>${p.name}</span></button>`).join('');
   const p=PLATFORMS.find(x=>x.key===platCur);
   const cnt=products.filter(x=>getFitPlatforms(x.cat).some(f=>f.key===p.key)).length;
   const totalPages=Math.ceil(p.hot.length/PLAT_PAGE_SIZE);
@@ -1133,7 +1133,7 @@ function renderPlatforms(){
   $('platBody').innerHTML=`
     <div class="plat-card" style="border-color:${p.color}">
       <div class="plat-head" style="background:${p.color}1a">
-        <div style="display:flex;align-items:center;gap:8px"><div>${p.icon||p.flag}</div><div><b style="color:${p.color}">${p.name}</b> &nbsp;<span class="small">${p.role}</span></div></div>
+        <div style="display:flex;align-items:center;gap:8px"><img src="images/logos/${p.key==='ali'?'ali':p.key==='6thstreet'?'sixthstreet':p.key}.png" alt="${p.name}" style="width:28px;height:28px;border-radius:6px;object-fit:contain" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><span style="display:none;width:28px;height:28px;border-radius:6px;background:${p.color}1a;align-items:center;justify-content:center;font-size:18px">${p.icon||p.flag}</span><div><b style="color:${p.color}">${p.name}</b> &nbsp;<span class="small">${p.role}</span></div></div>
       </div>
       <div class="plat-meta">
         <div><b>主战场热销品类：</b>${p.best.join(' · ')}</div>
