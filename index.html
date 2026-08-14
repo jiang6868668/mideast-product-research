@@ -1499,19 +1499,52 @@ function fetchWithTimeout(url,ms){
 }
 async function fetchHtmlText(url){
   const enc=encodeURIComponent(url);
+  // 代理列表：按国内可用性排序（jina 最稳，apiproxy/corsproxy/allorigins 备用）
   const proxies=[
-    'https://api.allorigins.win/raw?url='+enc,
+    'https://r.jina.ai/http://'+url.replace(/^https?:\/\//,''),
+    'https://api.aproxy.com/v1/fetch?url='+enc,
     'https://corsproxy.io/?url='+enc,
-    'https://r.jina.ai/http://'+url.replace(/^https?:\/\//,'')
+    'https://api.allorigins.win/raw?url='+enc
   ];
   for(const p of proxies){
     try{
-      const r=await fetchWithTimeout(p,9000);
+      const r=await fetchWithTimeout(p,8000);
       if(!r.ok) continue;
       const txt=await r.text();
       if(txt&&txt.length>200) return txt;
     }catch(e){/* 试下一个代理 */}
   }
+  return null;
+}
+
+// 从 URL 本身智能提取商品名线索（所有代理都失败时的兜底，至少让标题不显示一长串URL）
+function guessFromUrl(url){
+  try{
+    const u=new URL(url);
+    const parts=u.pathname.replace(/\/$/,'').split('/');
+    // Noon: /uae-en/7-4l-air-fryer-xxx/p → 取倒数第二段（跳过尾部 /p）
+    // 其他平台：取最后一段
+    let slug='';
+    if(/noon\.com/i.test(u.hostname)&&parts.length>=3&&/p$/i.test(parts[parts.length-1])){
+      slug=parts[parts.length-2]||'';
+    }else{
+      slug=parts.pop()||'';
+    }
+    // 去掉末尾查询参数、ASIN、短编码
+    slug=slug.replace(/[?#].*$/,'')
+           .replace(/\/p$/i,'')          // noon 尾部 /p
+           .replace(/^(dp|p|product)\//i,'')  // amazon/shein 前缀
+           .replace(/-[A-Z0-9]{8,12}$/,'')   // ASIN/B0XXXXX / noon N码
+           .replace(/-p\d+$/i,'')         // shein p1234567
+           .replace(/\.html$/i,'')        // shein .html 后缀
+           .replace(/^p-/i,'');            // shein p-
+    // 把连字符/下划线转空格，清理掉纯数字段
+    let name=slug.replace(/[-_]/g,' ').replace(/\s+/g,' ').trim();
+    name=name.replace(/\b\d{2,}\b/g,'').replace(/\s+/g,' ').trim(); // 去掉≥2位纯数字词
+    // 首字母大写
+    name=name.replace(/\b\w+/g,w=>w.charAt(0).toUpperCase()+w.slice(1).toLowerCase());
+    if(name.length>4) return {title:name,image:'',desc:'',brand:'',price:'',currency:''};
+  }catch(e){}
   return null;
 }
 function parseHtmlMeta(html,url){
@@ -1607,7 +1640,7 @@ async function parseProductUrls(){
   renderLinkForms();
   st.innerHTML='<span style="color:#2980b9">⏳ 已识别 <b>'+urls.length+'</b> 条链接，正在后台尝试自动抓取（抓不到也能直接手填后导出）…</span>';
   // 2) 后台逐条尝试抓取并回填（只填空白字段，不覆盖你已手填的内容）
-  let ok=0;
+  let ok=0,gue=0;
   for(let i=0;i<urls.length;i++){
     try{
       const text=await fetchHtmlText(urls[i]);
@@ -1617,13 +1650,23 @@ async function parseProductUrls(){
         Object.assign(LINK_PRODUCTS[i],{title:p.title,image:p.image,desc:p.desc,brand:p.brand,price:p.price,currency:p.currency});
         fillLinkForm(i);
         ok++;
+      }else{
+        // 所有代理都失败：从 URL slug 智能提取商品名作为兜底
+        const g=guessFromUrl(urls[i]);
+        if(g&&g.title){
+          Object.assign(LINK_PRODUCTS[i],{title:g.title,image:g.image,desc:g.desc,brand:g.brand,price:g.price,currency:g.currency});
+          fillLinkForm(i);
+          gue++;
+        }
       }
-    }catch(e){/* 忽略，走手填 */}
+    }catch(e){/* 忽略 */}
   }
   if(ok===urls.length){
-    st.innerHTML='<span style="color:#27ae60">✅ 全部 '+ok+' 条已自动解析并回填！核对必填项（Brand / GTIN / 图片须 .jpeg / 类目）后导出。</span>';
+    st.innerHTML='<span style="color:#27ae60">✅ 全部 '+ok+' 条已自动抓取并回填！核对必填项（Brand / GTIN / 图片须 .jpeg / 类目）后导出。</span>';
+  }else if(ok+gue===urls.length){
+    st.innerHTML='<span style="color:#e67e22">⚠️ 公共代理在你网络下不通（'+ok+' 条抓取成功、'+gue+' 条从链接名猜出标题）。请补全 Brand / 图片 / 价格后导出。</span>';
   }else{
-    st.innerHTML='<span style="color:#e67e22">✅ 已识别 <b>'+urls.length+'</b> 条并生成表单，其中 <b>'+ok+'</b> 条自动抓取成功、其余 '+(urls.length-ok)+' 条请手填（公共代理在你的网络下可能不通，属正常）。填完点导出即可。</span>';
+    st.innerHTML='<span style="color:#e67e22">✅ 已识别 <b>'+urls.length+'</b> 条并生成表单（抓取 '+ok+' 条 + 猜名 '+gue+' 条 + 手填 '+(urls.length-ok-gue)+' 条）。公共代理不通属正常，填完点导出即可。</span>';
   }
 }
 function buildSku(url){
